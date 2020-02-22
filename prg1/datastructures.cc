@@ -5,6 +5,7 @@
 #include <random>
 #include <cmath>
 #include <stdexcept>
+#include <algorithm>
 
 std::minstd_rand rand_engine; // Reasonably quick pseudo-random generator
 
@@ -26,7 +27,7 @@ Type random_in_range(Type start, Type end)
 
 Datastructures::Datastructures()
 {
-    // Replace this comment with your implementation
+
 }
 
 Datastructures::~Datastructures()
@@ -36,37 +37,61 @@ Datastructures::~Datastructures()
 
 int Datastructures::stop_count()
 {
-    // Replace this comment and the line below with your implementation
-    return NO_VALUE;
+    int size = m_container.size();
+    if(size != 0){
+        return size;
+    } else {
+        return NO_VALUE;
+    }
 }
 
-void Datastructures::clear_all()
+void Datastructures::clear_all() //No efficiency test
 {
-    // Replace this comment with your implementation
+    m_container.clear();
 }
 
-std::vector<StopID> Datastructures::all_stops()
+std::vector<StopID> Datastructures::all_stops() //No efficiency test
 {
-    // Replace this comment and the line below with your implementation
-    return {NO_STOP};
+    if(m_container.empty()){
+        return {NO_STOP};
+    } else {
+        std::vector<StopID> stopIdContainer = {};
+        for(auto i : m_container){
+            stopIdContainer.push_back(i.first);
+        }
+        return stopIdContainer;
+    }
 }
 
 bool Datastructures::add_stop(StopID id, const Name& name, Coord xy)
 {
-    // Replace this comment and the line below with your implementation
-    return false;
+    if(m_container.count(id)){
+        return false;
+    } else {
+        m_container.insert(std::make_pair(id, std::pair<Name,Coord>(name,xy)));
+        return true;
+    }
+
 }
 
 Name Datastructures::get_stop_name(StopID id)
 {
-    // Replace this comment and the line below with your implementation
-    return NO_NAME;
+    auto search = m_container.find(id);
+    if(search != m_container.end()){
+        return search->second.first;
+    } else {
+        return NO_NAME;
+    }
 }
 
 Coord Datastructures::get_stop_coord(StopID id)
 {
-    // Replace this comment and the line below with your implementation
-    return NO_COORD;
+    auto search = m_container.find(id);
+    if(search != m_container.end()){
+        return search->second.second;
+    } else {
+        return NO_COORD;
+    }
 }
 
 std::vector<StopID> Datastructures::stops_alphabetically()

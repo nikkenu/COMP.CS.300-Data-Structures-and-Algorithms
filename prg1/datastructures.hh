@@ -7,6 +7,7 @@
 #include <vector>
 #include <utility>
 #include <limits>
+#include <unordered_map>
 
 // Types for IDs
 using StopID = long int;
@@ -159,7 +160,7 @@ public:
     RegionID stops_common_region(StopID id1, StopID id2);
 
 private:
-    // Add stuff needed for your class implementation here
+    std::unordered_map<StopID, std::pair<Name, Coord>> m_container;
 
 };
 
