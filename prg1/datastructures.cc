@@ -168,8 +168,19 @@ StopID Datastructures::min_coord()
 
 StopID Datastructures::max_coord()
 {
-    // Replace this comment and the line below with your implementation
-    return NO_STOP;
+    if(m_container.empty()){
+        return NO_STOP;
+    } else {
+        Comparator comp = [this](std::pair<StopID, StopStructure> itemOne, std::pair<StopID, StopStructure> itemTwo){
+            double itemOneDistance = pythagorasCalc(itemOne.second.coordinate);
+            double itemTwoDistance = pythagorasCalc(itemTwo.second.coordinate);
+            if(itemOneDistance > itemTwoDistance)return true;
+            else if(itemOneDistance < itemTwoDistance) return false;
+            else return false;
+        };
+        std::pair<StopID, StopStructure> stopWithMaxCoord = *min_element(m_container.begin(), m_container.end(), comp);
+        return stopWithMaxCoord.first;
+    }
 }
 
 std::vector<StopID> Datastructures::find_stops(Name const& name)
