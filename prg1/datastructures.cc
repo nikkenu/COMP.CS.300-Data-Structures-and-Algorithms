@@ -6,6 +6,11 @@
 #include <cmath>
 #include <stdexcept>
 #include <algorithm>
+#include <functional>
+#include <set>
+#include <cmath>
+#include <math.h>
+#include <iostream>
 
 std::minstd_rand rand_engine; // Reasonably quick pseudo-random generator
 
@@ -38,7 +43,7 @@ Datastructures::~Datastructures()
 int Datastructures::stop_count()
 {
     int size = m_container.size();
-    if(size != 0){
+    if(size != 1){
         return size;
     } else {
         return NO_VALUE;
@@ -55,11 +60,11 @@ std::vector<StopID> Datastructures::all_stops() //No efficiency test
     if(m_container.empty()){
         return {NO_STOP};
     } else {
-        std::vector<StopID> stopIdContainer = {};
+        std::vector<StopID> tempContainer = {};
         for(auto i : m_container){
-            stopIdContainer.push_back(i.first);
+            tempContainer.push_back(i.first);
         }
-        return stopIdContainer;
+        return tempContainer;
     }
 }
 
@@ -68,17 +73,18 @@ bool Datastructures::add_stop(StopID id, const Name& name, Coord xy)
     if(m_container.count(id)){
         return false;
     } else {
-        m_container.insert(std::make_pair(id, std::pair<Name,Coord>(name,xy)));
+        auto sharedRegionStructure = std::make_shared<RegionStructure>();
+        StopStructure ss({name, xy, sharedRegionStructure});
+        m_container.insert(std::make_pair(id, ss));
         return true;
     }
-
 }
 
 Name Datastructures::get_stop_name(StopID id)
 {
     auto search = m_container.find(id);
     if(search != m_container.end()){
-        return search->second.first;
+        return search->second.name;
     } else {
         return NO_NAME;
     }
@@ -88,7 +94,7 @@ Coord Datastructures::get_stop_coord(StopID id)
 {
     auto search = m_container.find(id);
     if(search != m_container.end()){
-        return search->second.second;
+        return search->second.coordinate;
     } else {
         return NO_COORD;
     }
@@ -96,14 +102,50 @@ Coord Datastructures::get_stop_coord(StopID id)
 
 std::vector<StopID> Datastructures::stops_alphabetically()
 {
-    // Replace this comment and the line below with your implementation
-    return {NO_STOP};
+    if(m_container.empty()){
+        return {NO_STOP};
+    } else {
+        Comparator comp = [](std::pair<StopID, StopStructure> itemOne, std::pair<StopID, StopStructure> itemTwo){
+            return itemOne.second.name < itemTwo.second.name;
+        };
+        std::set<std::pair<StopID, StopStructure>, Comparator> stopsAlphabetically(m_container.begin(), m_container.end(), comp);
+        std::vector<StopID> stopsAlphabeticallyInVector = {};
+        for(std::pair<StopID, StopStructure> i : stopsAlphabetically){
+            stopsAlphabeticallyInVector.push_back(i.first);
+        }
+        return stopsAlphabeticallyInVector;
+    }
 }
 
-std::vector<StopID> Datastructures::stops_coord_order()
+std::vector<StopID> Datastructures::stops_coord_order() //Should I initialize new Coords for items??
 {
-    // Replace this comment and the line below with your implementation
-    return {NO_STOP};
+    if(m_container.empty()){
+        return {NO_STOP};
+    } else {
+        Comparator comp = [this](std::pair<StopID, StopStructure> itemOne, std::pair<StopID, StopStructure> itemTwo){
+            double itemOneDistance = pythagorasCalc(itemOne.second.coordinate);
+            double itemTwoDistance = pythagorasCalc(itemTwo.second.coordinate);
+            if(itemOneDistance < itemTwoDistance){
+                return true;
+            } else if(itemOneDistance > itemTwoDistance){
+                return false;
+            } else {
+                if(itemOne.second.coordinate.y < itemTwo.second.coordinate.y){
+                    return true;
+                } else if(itemOne.second.coordinate.y > itemTwo.second.coordinate.y){
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+        };
+        std::set<std::pair<StopID, StopStructure>, Comparator> stopsAlphabetically(m_container.begin(), m_container.end(), comp);
+        std::vector<StopID> stopsByCoordInVector = {};
+        for(std::pair<StopID, StopStructure> i : stopsAlphabetically){
+            stopsByCoordInVector.push_back(i.first);
+        }
+        return stopsByCoordInVector;
+    }
 }
 
 StopID Datastructures::min_coord()
@@ -200,4 +242,9 @@ RegionID Datastructures::stops_common_region(StopID id1, StopID id2)
 {
     // Replace this comment and the line below with your implementation
     return NO_REGION;
+}
+
+double Datastructures::pythagorasCalc(Coord coord)
+{
+    return sqrt(pow(coord.x, 2) + pow(coord.y,2));
 }

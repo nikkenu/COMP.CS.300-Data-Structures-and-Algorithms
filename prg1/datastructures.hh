@@ -8,7 +8,8 @@
 #include <utility>
 #include <limits>
 #include <unordered_map>
-
+#include <memory>
+#include <functional>
 // Types for IDs
 using StopID = long int;
 using RegionID = std::string;
@@ -158,10 +159,26 @@ public:
     // Estimate of performance:
     // Short rationale for estimate:
     RegionID stops_common_region(StopID id1, StopID id2);
+    
+    double pythagorasCalc(Coord coord);
 
 private:
-    std::unordered_map<StopID, std::pair<Name, Coord>> m_container;
+    struct RegionStructure
+    {
+        RegionID regionID = NO_REGION;
+        std::weak_ptr<RegionStructure> parent;
+        std::vector<std::weak_ptr<RegionStructure>> children;
+    };
 
+    struct StopStructure
+    {
+        Name name = NO_NAME;
+        Coord coordinate;
+        std::weak_ptr<RegionStructure> region;
+    };
+
+    std::unordered_map<StopID, StopStructure> m_container;
+    typedef std::function<bool(std::pair<StopID, StopStructure>, std::pair<StopID, StopStructure>)> Comparator;
 };
 
 #endif // DATASTRUCTURES_HH
