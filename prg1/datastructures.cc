@@ -150,8 +150,20 @@ std::vector<StopID> Datastructures::stops_coord_order() //Should I initialize ne
 
 StopID Datastructures::min_coord()
 {
-    // Replace this comment and the line below with your implementation
-    return NO_STOP;
+    if(m_container.empty()){
+        return NO_STOP;
+    } else {
+        Comparator comp = [this](std::pair<StopID, StopStructure> itemOne, std::pair<StopID, StopStructure> itemTwo){
+            double itemOneDistance = pythagorasCalc(itemOne.second.coordinate);
+            double itemTwoDistance = pythagorasCalc(itemTwo.second.coordinate);
+            if(itemOneDistance < itemTwoDistance)return true;
+            else if(itemOneDistance > itemTwoDistance) return false;
+            else return false;
+        };
+        std::pair<StopID, StopStructure> stopWithMinCoord = *min_element(m_container.begin(), m_container.end(), comp);
+        return stopWithMinCoord.first;
+    }
+
 }
 
 StopID Datastructures::max_coord()
