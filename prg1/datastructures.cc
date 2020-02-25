@@ -203,14 +203,24 @@ std::vector<StopID> Datastructures::find_stops(Name const& name)
 
 bool Datastructures::change_stop_name(StopID id, const Name& newname)
 {
-    // Replace this comment and the line below with your implementation
-    return false;
+    auto it = m_container.find(id);
+    if(it != m_container.end()){
+        it->second.name = newname;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 bool Datastructures::change_stop_coord(StopID id, Coord newcoord)
 {
-    // Replace this comment and the line below with your implementation
-    return false;
+    auto it = m_container.find(id);
+    if(it != m_container.end()){
+        it->second.coordinate = newcoord;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 bool Datastructures::add_region(RegionID id, const Name &name)
