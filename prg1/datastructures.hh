@@ -165,18 +165,19 @@ public:
 private:
     struct RegionStructure
     {
-        RegionID regionID = NO_REGION;
-        std::weak_ptr<RegionStructure> parent;
-        std::vector<std::weak_ptr<RegionStructure>> children;
+        Name name = NO_NAME;
+        std::shared_ptr<RegionID> parent;
+        std::vector<std::shared_ptr<RegionID>> children;
     };
 
     struct StopStructure
     {
         Name name = NO_NAME;
         Coord coordinate;
-        std::weak_ptr<RegionStructure> region;
+        std::shared_ptr<RegionID> region;
     };
 
+    std::unordered_map<RegionID, RegionStructure> m_regionContainer;
     std::unordered_map<StopID, StopStructure> m_container;
     typedef std::function<bool(std::pair<StopID, StopStructure>, std::pair<StopID, StopStructure>)> Comparator;
 };

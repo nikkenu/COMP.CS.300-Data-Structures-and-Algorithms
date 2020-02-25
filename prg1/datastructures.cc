@@ -73,8 +73,7 @@ bool Datastructures::add_stop(StopID id, const Name& name, Coord xy)
     if(m_container.count(id)){
         return false;
     } else {
-        auto sharedRegionStructure = std::make_shared<RegionStructure>();
-        StopStructure ss({name, xy, sharedRegionStructure});
+        StopStructure ss({name, xy});
         m_container.insert(std::make_pair(id, ss));
         return true;
     }
@@ -225,37 +224,86 @@ bool Datastructures::change_stop_coord(StopID id, Coord newcoord)
 
 bool Datastructures::add_region(RegionID id, const Name &name)
 {
-    // Replace this comment and the line below with your implementation
-    return false;
+    if(m_regionContainer.count(id)){
+        return false;
+    } else {
+        RegionStructure rs({name});
+        m_regionContainer.insert(std::make_pair(id, rs));
+        return true;
+    }
+
 }
 
 Name Datastructures::get_region_name(RegionID id)
 {
-    // Replace this comment and the line below with your implementation
-    return NO_NAME;
+    auto search = m_regionContainer.find(id);
+    if(search != m_regionContainer.end()){
+        return search->second.name;
+    } else {
+        return NO_NAME;
+    }
 }
 
 std::vector<RegionID> Datastructures::all_regions()
 {
-    // Replace this comment and the line below with your implementation
-    return {NO_REGION};
+    if(m_regionContainer.empty()){
+        return {NO_REGION};
+    } else {
+        std::vector<RegionID> tempVector = {};
+        for(auto region : m_regionContainer){
+            tempVector.push_back(region.first);
+        }
+        return tempVector;
+    }
 }
 
 bool Datastructures::add_stop_to_region(StopID id, RegionID parentid)
 {
-    // Replace this comment and the line below with your implementation
+    auto it = m_container.find(id);
+    auto it2 = m_regionContainer.find(parentid);
+    if(it != m_container.end() || it2 != m_regionContainer.end()){
+        if(it->second.region == nullptr){
+            it->second.region = std::make_shared<RegionID>(parentid);
+            return true;
+        }
+    }
     return false;
 }
 
 bool Datastructures::add_subregion_to_region(RegionID id, RegionID parentid)
 {
-    // Replace this comment and the line below with your implementation
+    auto it = m_regionContainer.find(id);
+    if(it != m_regionContainer.end()){
+        if(it->second.parent == nullptr){
+            it->second.parent = std::make_shared<RegionID>(parentid);
+            return true;
+        }
+    }
     return false;
 }
 
 std::vector<RegionID> Datastructures::stop_regions(StopID id)
 {
-    // Replace this comment and the line below with your implementation
+    auto it = m_container.find(id);
+    if(it != m_container.end()){
+        if(it->second.region != nullptr){
+           std::vector<RegionID> regionsInVector = {};
+           RegionID stopsMainRegion = *it->second.region;
+           regionsInVector.push_back(stopsMainRegion);
+           auto it2 = m_regionContainer.find(stopsMainRegion);
+           if(it2 != m_regionContainer.end()){
+                if(it2->second.parent != nullptr){
+                    regionsInVector.push_back(*it2->second.parent);
+                }
+                if(!it2->second.children.empty()){
+                    for(auto child : it2->second.children){
+                        regionsInVector.push_back(*child);
+                    }
+                }
+           }
+           return regionsInVector;
+        }
+    }
     return {NO_REGION};
 }
 
