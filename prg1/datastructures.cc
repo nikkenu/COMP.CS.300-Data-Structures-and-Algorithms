@@ -185,7 +185,19 @@ StopID Datastructures::max_coord()
 
 std::vector<StopID> Datastructures::find_stops(Name const& name)
 {
-    // Replace this comment and the line below with your implementation
+    if(!m_container.empty()){
+        std::vector<StopID> stopsByName = {};
+        for(auto item : m_container){
+            if(item.second.name == name){
+                stopsByName.push_back(item.first);
+            } else {
+                continue;
+            }
+        }
+        if(!stopsByName.empty()){
+            return stopsByName;
+        }
+    }
     return {NO_STOP};
 }
 
