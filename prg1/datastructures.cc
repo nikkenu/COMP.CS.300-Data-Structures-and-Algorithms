@@ -315,8 +315,30 @@ void Datastructures::creation_finished()
 
 std::pair<Coord,Coord> Datastructures::region_bounding_box(RegionID id)
 {
-    // Replace this comment and the line below with your implementation
-    return {NO_COORD, NO_COORD};
+    Coord leftDownCorner = NO_COORD;
+    Coord rightTopCorner = NO_COORD;
+    for(auto i : m_container){
+        if(i.second.region != nullptr){
+            if(*i.second.region == id){
+                int x = i.second.coordinate.x;
+                int y = i.second.coordinate.y;
+                if(leftDownCorner == NO_COORD){
+                    leftDownCorner = {x,y};
+                } else {
+                    if(leftDownCorner.x > x) leftDownCorner.x = x;
+                    if(leftDownCorner.y > y) leftDownCorner.y = y;
+                }
+
+                if(rightTopCorner == NO_COORD){
+                    rightTopCorner = {x,y};
+                } else {
+                    if(rightTopCorner.x < x) rightTopCorner.x = x;
+                    if(rightTopCorner.y < y) rightTopCorner.y = y;
+                }
+            }
+        }
+    }
+    return {leftDownCorner, rightTopCorner};
 }
 
 std::vector<StopID> Datastructures::stops_closest_to(StopID id)
