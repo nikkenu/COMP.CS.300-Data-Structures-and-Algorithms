@@ -321,13 +321,16 @@ std::pair<Coord,Coord> Datastructures::region_bounding_box(RegionID id)
 
 std::vector<StopID> Datastructures::stops_closest_to(StopID id)
 {
-    // Replace this comment and the line below with your implementation
     return {NO_STOP};
 }
 
 bool Datastructures::remove_stop(StopID id)
 {
-    // Replace this comment and the line below with your implementation
+    auto it = m_container.find(id);
+    if(it != m_container.end()){
+        m_container.erase(id);
+        return true;
+    }
     return false;
 }
 
