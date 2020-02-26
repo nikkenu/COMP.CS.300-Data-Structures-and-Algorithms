@@ -10,6 +10,10 @@
 #include <unordered_map>
 #include <memory>
 #include <functional>
+#include <set>
+#include <cmath>
+#include <math.h>
+
 // Types for IDs
 using StopID = long int;
 using RegionID = std::string;
@@ -58,28 +62,35 @@ public:
     Datastructures();
     ~Datastructures();
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(1)
+    // Short rationale for estimate: Basicly there's only couple if-clauses
+    // and size function in unordered_map is O(1).
     int stop_count();
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: Basicly it goes throught
+    // every element in unordered map and deletes it.
     void clear_all();
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: Iterating map items is O(n)
+    // and putting them to back of the vector is O(1).
     std::vector<StopID> all_stops();
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: Time complexity for finding map item
+    // is O(1) in best case, but the worst case is O(n). Also, inserting to
+    // unordered map has same time complexity that finding method has.
     bool add_stop(StopID id, Name const& name, Coord xy);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: Because find method is O(1) in best case,
+    // and in worst case it's O(n).
     Name get_stop_name(StopID id);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: Because find method is O(1) in best case,
+    // and in worst case it's O(n).
     Coord get_stop_coord(StopID id);
 
     // We recommend you implement the operations below only after implementing the ones above
@@ -162,12 +173,14 @@ public:
     
     double pythagorasCalc(Coord coord);
 
+    double twoPointDistance(Coord coord1, Coord coord2);
+
 private:
     struct RegionStructure
     {
         Name name = NO_NAME;
         std::shared_ptr<RegionID> parent;
-        std::vector<std::shared_ptr<RegionID>> children;
+        std::set<std::shared_ptr<RegionID>> children;
     };
 
     struct StopStructure
@@ -177,9 +190,31 @@ private:
         std::shared_ptr<RegionID> region;
     };
 
+    struct CompareDistance
+    {
+        bool operator()(const std::pair<StopID, StopStructure>&itemOne, const std::pair<StopID,StopStructure>& itemTwo) const {
+            double itemOneDistance = sqrt(pow(itemOne.second.coordinate.x, 2) + pow(itemOne.second.coordinate.y,2));
+            double itemTwoDistance = sqrt(pow(itemTwo.second.coordinate.x, 2) + pow(itemTwo.second.coordinate.y,2));
+            if(itemOneDistance < itemTwoDistance){
+                return true;
+            } else if(itemOneDistance > itemTwoDistance){
+                return false;
+            } else {
+                if(itemOne.second.coordinate.y < itemTwo.second.coordinate.y){
+                    return true;
+                } else if(itemOne.second.coordinate.y > itemTwo.second.coordinate.y){
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+        }
+    };
+
     std::unordered_map<RegionID, RegionStructure> m_regionContainer;
     std::unordered_map<StopID, StopStructure> m_container;
     typedef std::function<bool(std::pair<StopID, StopStructure>, std::pair<StopID, StopStructure>)> Comparator;
+    typedef std::function<bool(std::pair<StopID, double>, std::pair<StopID, double>)> ComparatorDouble;
 };
 
 #endif // DATASTRUCTURES_HH
