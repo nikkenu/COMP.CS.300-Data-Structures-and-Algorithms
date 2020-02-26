@@ -290,9 +290,9 @@ std::pair<Coord,Coord> Datastructures::region_bounding_box(RegionID id)
     auto it = m_regionContainer.find(id);
     if(it != m_regionContainer.end()){
         if(!it->second.children.empty()){
-            for(auto childReg : it->second.children){
-                regions.push_back(*childReg);
-            }
+            std::for_each(it->second.children.begin(), it->second.children.end(), [&regions](std::shared_ptr<RegionID> item){
+               regions.push_back(*item);
+            });
         }
     }
 
@@ -322,29 +322,26 @@ std::pair<Coord,Coord> Datastructures::region_bounding_box(RegionID id)
 
 std::vector<StopID> Datastructures::stops_closest_to(StopID id)
 {
-    std::unordered_map<StopID, double> temp;
+    std::unordered_map<StopID, std::pair<Coord, double>> temp;
     auto it = m_container.find(id);
-    if(it != m_container.end()){
+    if(it != m_container.end() && m_container.size() >= 6){
+        Name idName = it->second.name;
         Coord idCoord = it->second.coordinate;
-        for(auto i : m_container){
-            if(i.first != id){
-                double distance = twoPointDistance(idCoord, i.second.coordinate);
-                temp.insert(std::make_pair(i.first,distance));
-            }
-        }
-        ComparatorDouble comp = [](std::pair<StopID, double> itemOne, std::pair<StopID, double> itemTwo){
-            return itemOne.second < itemTwo.second;
-        };
-        std::set<std::pair<StopID, double>, ComparatorDouble> stopsInDistanceOrder(temp.begin(), temp.end(), comp);
-        std::vector<StopID> fiveShortestDistancesToStop = {};
-        for(std::pair<StopID, double> i : stopsInDistanceOrder){
-            if(fiveShortestDistancesToStop.size() < 5){
-                fiveShortestDistancesToStop.push_back(i.first);
-            }
-        }
-        if(!fiveShortestDistancesToStop.empty()){
-            return fiveShortestDistancesToStop;
-        }
+        std::for_each(m_container.begin(), m_container.end(), [this, &idName,&idCoord,&temp](std::pair<StopID, StopStructure> item){
+           if(idName != item.second.name){
+               std::pair<Coord, double> pairTemp = std::make_pair(item.second.coordinate, twoPointDistance(idCoord, item.second.coordinate));
+               temp.insert(std::make_pair(item.first, pairTemp));
+           }
+        });
+
+        std::set<std::pair<StopID, std::pair<Coord, double>>, CompareClosest> distanceShorted(temp.begin(), temp.end(), CompareClosest());
+        std::vector<StopID> tempVector = {};
+        std::for_each(distanceShorted.begin(), distanceShorted.end(), [&tempVector](std::pair<StopID, std::pair<Coord, double>> item){
+           if(tempVector.size() < 5){
+                tempVector.push_back(item.first);
+           }
+        });
+        return tempVector;
     }
     return {NO_STOP};
 }
@@ -361,7 +358,36 @@ bool Datastructures::remove_stop(StopID id)
 
 RegionID Datastructures::stops_common_region(StopID id1, StopID id2)
 {
-    // Replace this comment and the line below with your implementation
+    auto it1 = m_container.find(id1);
+    auto it2 = m_container.find(id2);
+    if(it1 != m_container.end() && it2 != m_container.end() && it1->second.region != nullptr && it2->second.region != nullptr){
+        RegionID commonRegion = NO_REGION;
+        if(*it1->second.region == *it2->second.region){
+            commonRegion = *it1->second.region;
+        }
+
+        std::set<RegionID> id1Regions = {};
+        std::set<RegionID> id2Regions = {};
+        auto it3 = m_regionContainer.find(*it1->second.region);
+        auto it4 = m_regionContainer.find(*it2->second.region);
+
+        std::for_each(it3->second.children.begin(), it3->second.children.begin(), [&id1Regions](std::shared_ptr<RegionID> item){
+            id1Regions.insert(*item);
+        });
+
+        std::for_each(it4->second.children.begin(), it4->second.children.begin(), [&id2Regions](std::shared_ptr<RegionID> item){
+            id2Regions.insert(*item);
+        });
+
+        for(auto i : id1Regions){
+            auto k = id2Regions.find(i);
+            if(k != id2Regions.end()){
+                commonRegion = i;
+            }
+        }
+        return commonRegion;
+
+    }
     return NO_REGION;
 }
 

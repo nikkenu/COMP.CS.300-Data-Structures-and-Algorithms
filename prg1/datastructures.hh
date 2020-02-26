@@ -96,12 +96,12 @@ public:
     // We recommend you implement the operations below only after implementing the ones above
 
     // Estimate of performance: O(n)
-    // Short rationale for estimate: std::transform's worst case scenario is O(n),
+    // Short rationale for estimate: for loop is O(n),
     // and also bool operations worst case is O(n).
     std::vector<StopID> stops_alphabetically();
 
     // Estimate of performance: O(n)
-    // Short rationale for estimate: Bool operation and transform has same time complexity
+    // Short rationale for estimate: Bool operation and for loop has same time complexity
     // and they both are O(n), so we can say that function performs in O(n).
     std::vector<StopID> stops_coord_order();
 
@@ -234,10 +234,28 @@ private:
         }
     };
 
+    struct CompareClosest
+    {
+        bool operator()(const std::pair<StopID, std::pair<Coord, double>>&itemOne, const std::pair<StopID, std::pair<Coord, double>>& itemTwo) const {
+            if(itemOne.second.second < itemTwo.second.second){
+                return true;
+            } else if(itemOne.second.second > itemTwo.second.second){
+                return false;
+            } else {
+                if(itemOne.second.first.y < itemTwo.second.first.y){
+                    return true;
+                } else if(itemOne.second.first.y > itemTwo.second.first.y){
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+        }
+    };
+
     std::unordered_map<RegionID, RegionStructure> m_regionContainer;
     std::unordered_map<StopID, StopStructure> m_container;
     typedef std::function<bool(std::pair<StopID, StopStructure>, std::pair<StopID, StopStructure>)> Comparator;
-    typedef std::function<bool(std::pair<StopID, double>, std::pair<StopID, double>)> ComparatorDouble;
 };
 
 #endif // DATASTRUCTURES_HH
