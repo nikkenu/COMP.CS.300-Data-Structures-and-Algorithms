@@ -124,9 +124,9 @@ std::vector<StopID> Datastructures::stops_coord_order()
     } else {
         std::set<std::pair<StopID, StopStructure>, CompareDistance> stopsInDistanceOrder(m_container.begin(), m_container.end(), CompareDistance());
         std::vector<StopID> stopsByCoordInVector = {};
-        for(std::pair<StopID, StopStructure> i : stopsInDistanceOrder){
-            stopsByCoordInVector.push_back(i.first);
-        }
+        std::transform(m_container.begin(), m_container.end(), std::back_inserter(stopsByCoordInVector), [](std::pair<StopID, StopStructure> item){
+           return item.first;
+        });
         return stopsByCoordInVector;
     }
 }
@@ -156,13 +156,11 @@ std::vector<StopID> Datastructures::find_stops(Name const& name)
 {
     if(!m_container.empty()){
         std::vector<StopID> stopsByName = {};
-        for(auto item : m_container){
-            if(item.second.name == name){
-                stopsByName.push_back(item.first);
-            } else {
-                continue;
-            }
-        }
+        std::for_each(m_container.begin(), m_container.end(), [&name, &stopsByName](const std::pair<StopID, StopStructure> item){
+           if(item.second.name == name){
+               stopsByName.push_back(item.first);
+           }
+        });
         if(!stopsByName.empty()){
             return stopsByName;
         }
@@ -267,9 +265,9 @@ std::vector<RegionID> Datastructures::stop_regions(StopID id)
                     regionsInVector.push_back(*it2->second.parent);
                 }
                 if(!it2->second.children.empty()){
-                    for(auto child : it2->second.children){
-                        regionsInVector.push_back(*child);
-                    }
+                    std::transform(it2->second.children.begin(), it2->second.children.end(), std::back_inserter(regionsInVector), [](std::shared_ptr<RegionID> item){
+                       return *item;
+                    });
                 }
            }
            return regionsInVector;

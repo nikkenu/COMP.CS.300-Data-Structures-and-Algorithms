@@ -83,70 +83,93 @@ public:
     // unordered map has same time complexity that finding method has.
     bool add_stop(StopID id, Name const& name, Coord xy);
 
-    // Estimate of performance: O(n)
+    // Estimate of performance: θ(1) but sometimes O(n)
     // Short rationale for estimate: Because find method is O(1) in best case,
     // and in worst case it's O(n).
     Name get_stop_name(StopID id);
 
-    // Estimate of performance: O(n)
+    // Estimate of performance: θ(1) but sometimes O(n)
     // Short rationale for estimate: Because find method is O(1) in best case,
     // and in worst case it's O(n).
     Coord get_stop_coord(StopID id);
 
     // We recommend you implement the operations below only after implementing the ones above
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: std::transform's worst case scenario is O(n),
+    // and also bool operations worst case is O(n).
     std::vector<StopID> stops_alphabetically();
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: Bool operation and transform has same time complexity
+    // and they both are O(n), so we can say that function performs in O(n).
     std::vector<StopID> stops_coord_order();
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: Bool operation has time complexity of O(n)
+    // and method's has not other slower operations. min_element has time complexity O(n-1)
     StopID min_coord();
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: Bool operation has time complexity of O(n)
+    // and method's has not other slower operations. max_element has time complexity O(n-1)
     StopID max_coord();
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: std::for_each function has time complexity of O(n)
+    // and there's no inner loops or anything else so we can say function is O(n)
     std::vector<StopID> find_stops(Name const& name);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: θ(1) but sometimes O(n)
+    // Short rationale for estimate: std::find function is the slowest
+    // and it has time complexity of θ(1), but the worst case scenario is O(n).
+    // Also, there's no inner loops or any slower actions.
     bool change_stop_name(StopID id, Name const& newname);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: θ(1) but sometimes O(n)
+    // Short rationale for estimate: std::find function is the slowest
+    // and it has time complexity of θ(1), but the worst case scenario is O(n).
+    // Also, there's no inner loops or any slower actions.
     bool change_stop_coord(StopID id, Coord newcoord);
 
     // We recommend you implement the operations below only after implementing the ones above
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: std::find function and insertion to map
+    // has same time complexity of O(n). It would be n^2, but actually
+    // we go through the find first and after it we insert it.
     bool add_region(RegionID id, Name const& name);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: θ(1) but sometimes O(n)
+    // Short rationale for estimate: std::find function is the slowest
+    // and it has time complexity of θ(1), but the worst case scenario is O(n).
+    // Also, there's no inner loops or any slower actions.
     Name get_region_name(RegionID id);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: std::transform is the slowest
+    // action in the function and there's no inner loop or anything
+    // that would slow down the process more than O(n). Std::transform
+    // time complexity is O(n).
     std::vector<RegionID> all_regions();
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: θ(1) but sometimes O(n)
+    // Short rationale for estimate: std::find is the slowest action
+    // in the function and it's time complexity is usually θ(1), but
+    // at the worst case scenario is O(n). And there's no inner loops etc.
     bool add_stop_to_region(StopID id, RegionID parentid);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: θ(1) but sometimes O(n)
+    // Short rationale for estimate: std::find is the slowest action
+    // in the function and it's time complexity is usually θ(1), but
+    // at the worst case scenario is O(n). And there's no inner loops etc.
     bool add_subregion_to_region(RegionID id, RegionID parentid);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: std::find θ(1), but sometimes O(n).
+    // std::transform is O(n), and vector push_back is O(1). Also, theres
+    // no inner loops or anything slower so we can say that the function
+    // time complexity is O(n).
     std::vector<RegionID> stop_regions(StopID id);
 
     // Non-compulsory operations
