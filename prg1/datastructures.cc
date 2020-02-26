@@ -110,8 +110,8 @@ std::vector<StopID> Datastructures::stops_alphabetically()
         };
         std::set<std::pair<StopID, StopStructure>, Comparator> stopsAlphabetically(m_container.begin(), m_container.end(), comp);
         std::vector<StopID> stopsAlphabeticallyInVector = {};
-        std::transform(m_container.begin(), m_container.end(), std::back_inserter(stopsAlphabeticallyInVector), [](std::pair<StopID,StopStructure> item){
-           return item.first;
+        std::for_each(stopsAlphabetically.begin(), stopsAlphabetically.end(), [&stopsAlphabeticallyInVector](std::pair<StopID, StopStructure> item){
+           stopsAlphabeticallyInVector.push_back(item.first);
         });
         return stopsAlphabeticallyInVector;
     }
@@ -124,8 +124,8 @@ std::vector<StopID> Datastructures::stops_coord_order()
     } else {
         std::set<std::pair<StopID, StopStructure>, CompareDistance> stopsInDistanceOrder(m_container.begin(), m_container.end(), CompareDistance());
         std::vector<StopID> stopsByCoordInVector = {};
-        std::transform(m_container.begin(), m_container.end(), std::back_inserter(stopsByCoordInVector), [](std::pair<StopID, StopStructure> item){
-           return item.first;
+        std::for_each(stopsInDistanceOrder.begin(), stopsInDistanceOrder.end(), [&stopsByCoordInVector](std::pair<StopID, StopStructure> item){
+           stopsByCoordInVector.push_back(item.first);
         });
         return stopsByCoordInVector;
     }
