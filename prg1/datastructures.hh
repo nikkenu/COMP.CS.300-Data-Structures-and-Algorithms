@@ -13,6 +13,7 @@
 #include <set>
 #include <cmath>
 #include <math.h>
+#include <queue>
 
 // Types for IDs
 using StopID = long int;
@@ -193,12 +194,15 @@ public:
     // Estimate of performance:
     // Short rationale for estimate:
     RegionID stops_common_region(StopID id1, StopID id2);
-    
-    double pythagorasCalc(Coord coord);
-
-    double twoPointDistance(Coord coord1, Coord coord2);
 
 private:
+    double pythagorasCalc(Coord coord);
+    double twoPointDistance(Coord coord1, Coord coord2);
+    void findRegionParents(RegionID region, std::vector<RegionID> &regions);
+    void findRegionParentsSecond(RegionID region, std::vector<RegionID> &regions);
+    void findRegionChilds(RegionID region, std::vector<RegionID> &regions);
+    RegionID findCommonRegion(const std::vector<RegionID> &regions1, const std::vector<RegionID> &regions2);
+
     struct RegionStructure
     {
         Name name = NO_NAME;
@@ -211,6 +215,19 @@ private:
         Name name = NO_NAME;
         Coord coordinate;
         std::shared_ptr<RegionID> region;
+    };
+
+    struct NameComparator
+    {
+        bool operator()(const std::pair<StopID, StopStructure>&itemOne, const std::pair<StopID,StopStructure>& itemTwo) const {
+            if(itemOne.second.name < itemTwo.second.name){
+                return true;
+            } else if(itemOne.second.name > itemTwo.second.name){
+                return false;
+            } else {
+                return true;
+            }
+        }
     };
 
     struct CompareDistance
@@ -255,7 +272,6 @@ private:
 
     std::unordered_map<RegionID, RegionStructure> m_regionContainer;
     std::unordered_map<StopID, StopStructure> m_container;
-    typedef std::function<bool(std::pair<StopID, StopStructure>, std::pair<StopID, StopStructure>)> Comparator;
 };
 
 #endif // DATASTRUCTURES_HH

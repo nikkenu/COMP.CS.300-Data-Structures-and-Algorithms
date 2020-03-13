@@ -42,11 +42,10 @@ Datastructures::~Datastructures()
 
 int Datastructures::stop_count()
 {
-    int size = m_container.size();
-    if(size != 1){
-        return size;
+    if(!m_container.empty()){
+        return m_container.size();
     } else {
-        return NO_VALUE;
+        return 0;
     }
 }
 
@@ -58,15 +57,14 @@ void Datastructures::clear_all()
 
 std::vector<StopID> Datastructures::all_stops()
 {
-    if(m_container.empty()){
-        return {NO_STOP};
-    } else {
+    if(!m_container.empty()){
         std::vector<StopID> tempContainer = {};
         std::transform(m_container.begin(), m_container.end(), std::back_inserter(tempContainer), [](std::pair<StopID, StopStructure> item){
            return item.first;
         });
         return tempContainer;
     }
+    return {};
 }
 
 bool Datastructures::add_stop(StopID id, const Name& name, Coord xy)
@@ -74,17 +72,19 @@ bool Datastructures::add_stop(StopID id, const Name& name, Coord xy)
     if(m_container.find(id) != m_container.end()){
         return false;
     } else {
-        StopStructure ss({name, xy});
-        m_container.insert(std::make_pair(id, ss));
+        StopStructure ss;
+        ss.name = name;
+        ss.coordinate = xy;
+        m_container.insert({id, ss});
         return true;
     }
 }
 
 Name Datastructures::get_stop_name(StopID id)
 {
-    auto search = m_container.find(id);
-    if(search != m_container.end()){
-        return search->second.name;
+    auto it = m_container.find(id);
+    if(it != m_container.end()){
+        return it->second.name;
     } else {
         return NO_NAME;
     }
@@ -92,9 +92,9 @@ Name Datastructures::get_stop_name(StopID id)
 
 Coord Datastructures::get_stop_coord(StopID id)
 {
-    auto search = m_container.find(id);
-    if(search != m_container.end()){
-        return search->second.coordinate;
+    auto it = m_container.find(id);
+    if(it != m_container.end()){
+        return it->second.coordinate;
     } else {
         return NO_COORD;
     }
@@ -103,12 +103,9 @@ Coord Datastructures::get_stop_coord(StopID id)
 std::vector<StopID> Datastructures::stops_alphabetically()
 {
     if(m_container.empty()){
-        return {NO_STOP};
+        return {};
     } else {
-        Comparator comp = [](std::pair<StopID, StopStructure> itemOne, std::pair<StopID, StopStructure> itemTwo){
-            return itemOne.second.name < itemTwo.second.name;
-        };
-        std::set<std::pair<StopID, StopStructure>, Comparator> stopsAlphabetically(m_container.begin(), m_container.end(), comp);
+        std::set<std::pair<StopID, StopStructure>, NameComparator> stopsAlphabetically(m_container.begin(), m_container.end(), NameComparator());
         std::vector<StopID> stopsAlphabeticallyInVector = {};
         std::for_each(stopsAlphabetically.begin(), stopsAlphabetically.end(), [&stopsAlphabeticallyInVector](std::pair<StopID, StopStructure> item){
            stopsAlphabeticallyInVector.push_back(item.first);
@@ -120,7 +117,7 @@ std::vector<StopID> Datastructures::stops_alphabetically()
 std::vector<StopID> Datastructures::stops_coord_order()
 {
     if(m_container.empty()){
-        return {NO_STOP};
+        return {};
     } else {
         std::set<std::pair<StopID, StopStructure>, CompareDistance> stopsInDistanceOrder(m_container.begin(), m_container.end(), CompareDistance());
         std::vector<StopID> stopsByCoordInVector = {};
@@ -195,8 +192,9 @@ bool Datastructures::add_region(RegionID id, const Name &name)
     if(m_regionContainer.find(id) != m_regionContainer.end()){
         return false;
     } else {
-        RegionStructure rs({name});
-        m_regionContainer.insert(std::make_pair(id, rs));
+        RegionStructure rs;
+        rs.name = name;
+        m_regionContainer.insert({id, rs});
         return true;
     }
 
@@ -215,7 +213,7 @@ Name Datastructures::get_region_name(RegionID id)
 std::vector<RegionID> Datastructures::all_regions()
 {
     if(m_regionContainer.empty()){
-        return {NO_REGION};
+        return {};
     } else {
         std::vector<RegionID> tempVector = {};
         std::transform(m_regionContainer.begin(), m_regionContainer.end(), std::back_inserter(tempVector), [](std::pair<RegionID, RegionStructure> item){
@@ -254,26 +252,15 @@ bool Datastructures::add_subregion_to_region(RegionID id, RegionID parentid)
 std::vector<RegionID> Datastructures::stop_regions(StopID id)
 {
     auto it = m_container.find(id);
-    if(it != m_container.end()){
-        if(it->second.region != nullptr){
-           std::vector<RegionID> regionsInVector = {};
-           RegionID stopsMainRegion = *it->second.region;
-           regionsInVector.push_back(stopsMainRegion);
-           auto it2 = m_regionContainer.find(stopsMainRegion);
-           if(it2 != m_regionContainer.end()){
-                if(it2->second.parent != nullptr){
-                    regionsInVector.push_back(*it2->second.parent);
-                }
-                if(!it2->second.children.empty()){
-                    std::transform(it2->second.children.begin(), it2->second.children.end(), std::back_inserter(regionsInVector), [](std::shared_ptr<RegionID> item){
-                       return *item;
-                    });
-                }
-           }
-           return regionsInVector;
+    if(it != m_container.end() && it->second.region != nullptr){
+        std::vector<RegionID> regions = {*it->second.region};
+        auto regIt = m_regionContainer.find(*it->second.region);
+        if(regIt->second.parent != nullptr){
+            findRegionParents(*regIt->second.parent, regions);
         }
+        return regions;
     }
-    return {NO_REGION};
+    return {};
 }
 
 void Datastructures::creation_finished()
@@ -289,11 +276,7 @@ std::pair<Coord,Coord> Datastructures::region_bounding_box(RegionID id)
     std::vector<RegionID> regions = {id};
     auto it = m_regionContainer.find(id);
     if(it != m_regionContainer.end()){
-        if(!it->second.children.empty()){
-            std::for_each(it->second.children.begin(), it->second.children.end(), [&regions](std::shared_ptr<RegionID> item){
-               regions.push_back(*item);
-            });
-        }
+        findRegionChilds(it->first, regions);
     }
 
     for(auto i : m_container){
@@ -324,7 +307,7 @@ std::vector<StopID> Datastructures::stops_closest_to(StopID id)
 {
     std::unordered_map<StopID, std::pair<Coord, double>> temp;
     auto it = m_container.find(id);
-    if(it != m_container.end() && m_container.size() >= 6){
+    if(it != m_container.end()){
         Name idName = it->second.name;
         Coord idCoord = it->second.coordinate;
         std::for_each(m_container.begin(), m_container.end(), [this, &idName,&idCoord,&temp](std::pair<StopID, StopStructure> item){
@@ -341,9 +324,10 @@ std::vector<StopID> Datastructures::stops_closest_to(StopID id)
                 tempVector.push_back(item.first);
            }
         });
+
         return tempVector;
     }
-    return {NO_STOP};
+    return {};
 }
 
 bool Datastructures::remove_stop(StopID id)
@@ -360,35 +344,17 @@ RegionID Datastructures::stops_common_region(StopID id1, StopID id2)
 {
     auto it1 = m_container.find(id1);
     auto it2 = m_container.find(id2);
-    if(it1 != m_container.end() && it2 != m_container.end() && it1->second.region != nullptr && it2->second.region != nullptr){
-        RegionID commonRegion = NO_REGION;
-        if(*it1->second.region == *it2->second.region){
-            commonRegion = *it1->second.region;
-        }
-
-        std::set<RegionID> id1Regions = {};
-        std::set<RegionID> id2Regions = {};
-        auto it3 = m_regionContainer.find(*it1->second.region);
-        auto it4 = m_regionContainer.find(*it2->second.region);
-
-        std::for_each(it3->second.children.begin(), it3->second.children.begin(), [&id1Regions](std::shared_ptr<RegionID> item){
-            id1Regions.insert(*item);
-        });
-
-        std::for_each(it4->second.children.begin(), it4->second.children.begin(), [&id2Regions](std::shared_ptr<RegionID> item){
-            id2Regions.insert(*item);
-        });
-
-        for(auto i : id1Regions){
-            auto k = id2Regions.find(i);
-            if(k != id2Regions.end()){
-                commonRegion = i;
-            }
-        }
-        return commonRegion;
-
+    if(it1 != m_container.end() && it1 != m_container.end()
+            && it1->second.region != nullptr && it2->second.region != nullptr){
+        std::vector<RegionID> id1Regions = {};
+        std::vector<RegionID> id2Regions = {};
+        findRegionParentsSecond(*it1->second.region, id1Regions);
+        findRegionParentsSecond(*it2->second.region, id2Regions);
+        RegionID commonReg = findCommonRegion(id1Regions, id2Regions);
+        return commonReg;
+    } else {
+        return NO_REGION;
     }
-    return NO_REGION;
 }
 
 double Datastructures::pythagorasCalc(Coord coord)
@@ -400,3 +366,48 @@ double Datastructures::twoPointDistance(Coord coord1, Coord coord2)
 {
     return sqrt(pow(coord1.x - coord2.x,2) + pow(coord1.y - coord2.y,2));
 }
+
+void Datastructures::findRegionParents(RegionID region, std::vector<RegionID> &regions)
+{
+    regions.push_back(region);
+    auto it = m_regionContainer.find(region);
+    if(it != m_regionContainer.end() && it->second.parent != nullptr){
+        findRegionParents(*it->second.parent, regions);
+    }
+}
+
+void Datastructures::findRegionParentsSecond(RegionID region, std::vector<RegionID> &regions)
+{
+    auto it = m_regionContainer.find(region);
+    if(it != m_regionContainer.end() && it->second.parent != nullptr){
+        findRegionParentsSecond(*it->second.parent, regions);
+        regions.push_back(region);
+    } else {
+        regions.push_back(region);
+    }
+}
+
+void Datastructures::findRegionChilds(RegionID region, std::vector<RegionID> &regions)
+{
+    auto it = m_regionContainer.find(region);
+    if(it != m_regionContainer.end() && !it->second.children.empty()){
+        auto childVec = it->second.children;
+        for(auto region : childVec){
+            regions.push_back(*region);
+            findRegionChilds(*region, regions);
+        }
+    }
+}
+
+RegionID Datastructures::findCommonRegion(const std::vector<RegionID> &regions1, const std::vector<RegionID> &regions2)
+{
+    RegionID commonRegion = NO_REGION;
+    std::vector<RegionID> result = {};
+    std::set_intersection(regions1.begin(), regions1.end(), regions2.begin(), regions2.end(), std::back_inserter(result));
+
+    if(!result.empty()){
+        commonRegion = result.at(result.size()-1);
+    }
+    return commonRegion;
+}
+
