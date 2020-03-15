@@ -14,6 +14,10 @@
 #include <cmath>
 #include <math.h>
 #include <queue>
+#include <map>
+#include <unordered_set>
+#include <iterator>
+#include <algorithm>
 
 // Types for IDs
 using StopID = long int;
@@ -196,12 +200,12 @@ public:
     RegionID stops_common_region(StopID id1, StopID id2);
 
 private:
-    double pythagorasCalc(Coord coord);
     double twoPointDistance(Coord coord1, Coord coord2);
     void findRegionParents(RegionID region, std::vector<RegionID> &regions);
     void findRegionParentsSecond(RegionID region, std::vector<RegionID> &regions);
     void findRegionChilds(RegionID region, std::vector<RegionID> &regions);
     RegionID findCommonRegion(const std::vector<RegionID> &regions1, const std::vector<RegionID> &regions2);
+    void sortStopsByCoord();
 
     struct RegionStructure
     {
@@ -217,32 +221,19 @@ private:
         std::shared_ptr<RegionID> region;
     };
 
-    struct NameComparator
-    {
-        bool operator()(const std::pair<StopID, StopStructure>&itemOne, const std::pair<StopID,StopStructure>& itemTwo) const {
-            if(itemOne.second.name < itemTwo.second.name){
-                return true;
-            } else if(itemOne.second.name > itemTwo.second.name){
-                return false;
-            } else {
-                return true;
-            }
-        }
-    };
-
     struct CompareDistance
     {
-        bool operator()(const std::pair<StopID, StopStructure>&itemOne, const std::pair<StopID,StopStructure>& itemTwo) const {
-            double itemOneDistance = sqrt(pow(itemOne.second.coordinate.x, 2) + pow(itemOne.second.coordinate.y,2));
-            double itemTwoDistance = sqrt(pow(itemTwo.second.coordinate.x, 2) + pow(itemTwo.second.coordinate.y,2));
+        bool operator()(const std::pair<Coord, StopID>&itemOne, const std::pair<Coord, StopID>& itemTwo) const {
+            double itemOneDistance = sqrt(pow(itemOne.first.x, 2) + pow(itemOne.first.y,2));
+            double itemTwoDistance = sqrt(pow(itemTwo.first.x, 2) + pow(itemTwo.first.y,2));
             if(itemOneDistance < itemTwoDistance){
                 return true;
             } else if(itemOneDistance > itemTwoDistance){
                 return false;
             } else {
-                if(itemOne.second.coordinate.y < itemTwo.second.coordinate.y){
+                if(itemOne.first.y < itemTwo.first.y){
                     return true;
-                } else if(itemOne.second.coordinate.y > itemTwo.second.coordinate.y){
+                } else if(itemOne.first.y > itemTwo.first.y){
                     return false;
                 } else {
                     return true;
@@ -272,6 +263,10 @@ private:
 
     std::unordered_map<RegionID, RegionStructure> m_regionContainer;
     std::unordered_map<StopID, StopStructure> m_container;
+    std::vector<std::pair<Coord, StopID>> m_sortedStopsByCoord;
+    std::vector<std::pair<Name, StopID>> m_sortedStopsByName;
+    bool m_isSortedStopsByCoord = false;
+    bool m_isSortedStopsByName = false;
 };
 
 #endif // DATASTRUCTURES_HH

@@ -59,7 +59,7 @@ std::vector<StopID> Datastructures::all_stops()
 {
     if(!m_container.empty()){
         std::vector<StopID> tempContainer = {};
-        std::transform(m_container.begin(), m_container.end(), std::back_inserter(tempContainer), [](std::pair<StopID, StopStructure> item){
+        std::transform(m_container.begin(), m_container.end(), std::back_inserter(tempContainer), [](const std::pair<StopID, StopStructure>& item){
            return item.first;
         });
         return tempContainer;
@@ -76,6 +76,8 @@ bool Datastructures::add_stop(StopID id, const Name& name, Coord xy)
         ss.name = name;
         ss.coordinate = xy;
         m_container.insert({id, ss});
+        m_sortedStopsByName.push_back({name,id});
+        m_sortedStopsByCoord.push_back({xy,id});
         return true;
     }
 }
@@ -105,10 +107,14 @@ std::vector<StopID> Datastructures::stops_alphabetically()
     if(m_container.empty()){
         return {};
     } else {
-        std::set<std::pair<StopID, StopStructure>, NameComparator> stopsAlphabetically(m_container.begin(), m_container.end(), NameComparator());
+        if(!m_isSortedStopsByName){
+            std::random_shuffle(m_sortedStopsByName.begin(), m_sortedStopsByName.end());
+            std::sort(m_sortedStopsByName.begin(), m_sortedStopsByName.end());
+            m_isSortedStopsByName = true;
+        }
         std::vector<StopID> stopsAlphabeticallyInVector = {};
-        std::for_each(stopsAlphabetically.begin(), stopsAlphabetically.end(), [&stopsAlphabeticallyInVector](std::pair<StopID, StopStructure> item){
-           stopsAlphabeticallyInVector.push_back(item.first);
+        std::for_each(m_sortedStopsByName.begin(),m_sortedStopsByName.end(), [&stopsAlphabeticallyInVector](const std::pair<Name, StopID>& item){
+            stopsAlphabeticallyInVector.push_back(item.second);
         });
         return stopsAlphabeticallyInVector;
     }
@@ -119,11 +125,14 @@ std::vector<StopID> Datastructures::stops_coord_order()
     if(m_container.empty()){
         return {};
     } else {
-        std::set<std::pair<StopID, StopStructure>, CompareDistance> stopsInDistanceOrder(m_container.begin(), m_container.end(), CompareDistance());
+        if(!m_isSortedStopsByCoord){
+            sortStopsByCoord();
+        }
         std::vector<StopID> stopsByCoordInVector = {};
-        std::for_each(stopsInDistanceOrder.begin(), stopsInDistanceOrder.end(), [&stopsByCoordInVector](std::pair<StopID, StopStructure> item){
-           stopsByCoordInVector.push_back(item.first);
+        std::for_each(m_sortedStopsByCoord.begin(), m_sortedStopsByCoord.end(), [&stopsByCoordInVector](const std::pair<Coord,StopID>& item){
+            stopsByCoordInVector.push_back(item.second);
         });
+
         return stopsByCoordInVector;
     }
 }
@@ -133,8 +142,10 @@ StopID Datastructures::min_coord()
     if(m_container.empty()){
         return NO_STOP;
     } else {
-        std::pair<StopID, StopStructure> stopWithMinCoord = *min_element(m_container.begin(), m_container.end(), CompareDistance());
-        return stopWithMinCoord.first;
+        if(!m_isSortedStopsByCoord){
+            sortStopsByCoord();
+        }
+        return m_sortedStopsByCoord.front().second;
     }
 
 }
@@ -144,8 +155,10 @@ StopID Datastructures::max_coord()
     if(m_container.empty()){
         return NO_STOP;
     } else {
-        std::pair<StopID, StopStructure> stopWithMaxCoord = *max_element(m_container.begin(), m_container.end(), CompareDistance());
-        return stopWithMaxCoord.first;
+        if(!m_isSortedStopsByCoord){
+            sortStopsByCoord();
+        }
+        return m_sortedStopsByCoord.back().second;
     }
 }
 
@@ -153,7 +166,7 @@ std::vector<StopID> Datastructures::find_stops(Name const& name)
 {
     if(!m_container.empty()){
         std::vector<StopID> stopsByName = {};
-        std::for_each(m_container.begin(), m_container.end(), [&name, &stopsByName](const std::pair<StopID, StopStructure> item){
+        std::for_each(m_container.begin(), m_container.end(), [&name, &stopsByName](const std::pair<StopID, StopStructure>& item){
            if(item.second.name == name){
                stopsByName.push_back(item.first);
            }
@@ -169,7 +182,15 @@ bool Datastructures::change_stop_name(StopID id, const Name& newname)
 {
     auto it = m_container.find(id);
     if(it != m_container.end()){
+        Name oldName = it->second.name;
         it->second.name = newname;
+        std::pair<Name, StopID> temp(oldName, id);
+        auto it2 = std::find(m_sortedStopsByName.begin(), m_sortedStopsByName.end(), temp);
+        if(it2 != m_sortedStopsByName.end()){
+            it2->first = newname;
+            m_isSortedStopsByName = false;
+        }
+
         return true;
     } else {
         return false;
@@ -180,7 +201,16 @@ bool Datastructures::change_stop_coord(StopID id, Coord newcoord)
 {
     auto it = m_container.find(id);
     if(it != m_container.end()){
+        Coord oldCoord = it->second.coordinate;
         it->second.coordinate = newcoord;
+
+        std::pair<Coord, StopID> temp(oldCoord, id);
+        auto it2 = std::find(m_sortedStopsByCoord.begin(), m_sortedStopsByCoord.end(), temp);
+        if(it2 != m_sortedStopsByCoord.end()){
+            it2->first = newcoord;
+            m_isSortedStopsByCoord = false;
+        }
+
         return true;
     } else {
         return false;
@@ -216,7 +246,7 @@ std::vector<RegionID> Datastructures::all_regions()
         return {};
     } else {
         std::vector<RegionID> tempVector = {};
-        std::transform(m_regionContainer.begin(), m_regionContainer.end(), std::back_inserter(tempVector), [](std::pair<RegionID, RegionStructure> item){
+        std::transform(m_regionContainer.begin(), m_regionContainer.end(), std::back_inserter(tempVector), [](const std::pair<RegionID, RegionStructure>& item){
            return item.first;
         });
         return tempVector;
@@ -310,7 +340,7 @@ std::vector<StopID> Datastructures::stops_closest_to(StopID id)
     if(it != m_container.end()){
         Name idName = it->second.name;
         Coord idCoord = it->second.coordinate;
-        std::for_each(m_container.begin(), m_container.end(), [this, &idName,&idCoord,&temp](std::pair<StopID, StopStructure> item){
+        std::for_each(m_container.begin(), m_container.end(), [this, &idName,&idCoord,&temp](const std::pair<StopID, StopStructure>& item){
            if(idName != item.second.name){
                std::pair<Coord, double> pairTemp = std::make_pair(item.second.coordinate, twoPointDistance(idCoord, item.second.coordinate));
                temp.insert(std::make_pair(item.first, pairTemp));
@@ -319,7 +349,7 @@ std::vector<StopID> Datastructures::stops_closest_to(StopID id)
 
         std::set<std::pair<StopID, std::pair<Coord, double>>, CompareClosest> distanceShorted(temp.begin(), temp.end(), CompareClosest());
         std::vector<StopID> tempVector = {};
-        std::for_each(distanceShorted.begin(), distanceShorted.end(), [&tempVector](std::pair<StopID, std::pair<Coord, double>> item){
+        std::for_each(distanceShorted.begin(), distanceShorted.end(), [&tempVector](const std::pair<StopID, std::pair<Coord, double>>& item){
            if(tempVector.size() < 5){
                 tempVector.push_back(item.first);
            }
@@ -335,6 +365,22 @@ bool Datastructures::remove_stop(StopID id)
     auto it = m_container.find(id);
     if(it != m_container.end()){
         m_container.erase(id);
+
+        auto it2 = m_sortedStopsByName.begin();
+        while (it2 != m_sortedStopsByName.end())
+        {
+            if (it2->second == id) it2 = m_sortedStopsByName.erase(it2);
+            else it2++;
+        }
+
+        auto it3 = m_sortedStopsByCoord.begin();
+        while (it3 != m_sortedStopsByCoord.end())
+        {
+            if (it3->second == id) it3 = m_sortedStopsByCoord.erase(it3);
+            else it3++;
+        }
+
+
         return true;
     }
     return false;
@@ -355,11 +401,6 @@ RegionID Datastructures::stops_common_region(StopID id1, StopID id2)
     } else {
         return NO_REGION;
     }
-}
-
-double Datastructures::pythagorasCalc(Coord coord)
-{
-    return sqrt(pow(coord.x, 2) + pow(coord.y,2));
 }
 
 double Datastructures::twoPointDistance(Coord coord1, Coord coord2)
@@ -409,5 +450,11 @@ RegionID Datastructures::findCommonRegion(const std::vector<RegionID> &regions1,
         commonRegion = result.at(result.size()-1);
     }
     return commonRegion;
+}
+
+void Datastructures::sortStopsByCoord()
+{
+    std::sort(m_sortedStopsByCoord.begin(), m_sortedStopsByCoord.end(), CompareDistance());
+    m_isSortedStopsByCoord = true;
 }
 
