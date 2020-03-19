@@ -53,6 +53,10 @@ void Datastructures::clear_all()
 {
     m_container.clear();
     m_regionContainer.clear();
+    m_sortedStopsByName.clear();
+    m_sortedStopsByCoord.clear();
+    m_isSortedStopsByName = false;
+    m_isSortedStopsByCoord = false;
 }
 
 std::vector<StopID> Datastructures::all_stops()
@@ -166,11 +170,26 @@ std::vector<StopID> Datastructures::find_stops(Name const& name)
 {
     if(!m_container.empty()){
         std::vector<StopID> stopsByName = {};
-        std::for_each(m_container.begin(), m_container.end(), [&name, &stopsByName](const std::pair<StopID, StopStructure>& item){
-           if(item.second.name == name){
-               stopsByName.push_back(item.first);
-           }
+
+        if(!m_isSortedStopsByName){
+            std::random_shuffle(m_sortedStopsByName.begin(), m_sortedStopsByName.end());
+            std::sort(m_sortedStopsByName.begin(), m_sortedStopsByName.end());
+            m_isSortedStopsByName = true;
+        }
+
+        auto it = std::find_if(m_sortedStopsByName.begin(), m_sortedStopsByName.end(), [&name](const std::pair<Name, StopID>& item){
+           return item.first == name;
         });
+
+        while(it != m_sortedStopsByName.end()){
+            if(it->first == name){
+                stopsByName.push_back(it->second);
+                it++;
+            } else {
+                break;
+            }
+        }
+
         if(!stopsByName.empty()){
             return stopsByName;
         }
@@ -190,7 +209,6 @@ bool Datastructures::change_stop_name(StopID id, const Name& newname)
             it2->first = newname;
             m_isSortedStopsByName = false;
         }
-
         return true;
     } else {
         return false;
@@ -309,9 +327,10 @@ std::pair<Coord,Coord> Datastructures::region_bounding_box(RegionID id)
         findRegionChilds(it->first, regions);
     }
 
-    for(auto i : m_container){
+    std::for_each(m_container.begin(), m_container.end(), [&regions, &leftDownCorner, &rightTopCorner](const std::pair<StopID, StopStructure>& i){
         if(i.second.region != nullptr){
-            if(std::count(regions.begin(), regions.end(), *i.second.region)){
+            auto it2 = std::find(regions.begin(), regions.end(), *i.second.region);
+            if(it2 != regions.end()){
                 int x = i.second.coordinate.x;
                 int y = i.second.coordinate.y;
                 if(leftDownCorner == NO_COORD){
@@ -329,7 +348,7 @@ std::pair<Coord,Coord> Datastructures::region_bounding_box(RegionID id)
                 }
             }
         }
-    }
+    });
     return {leftDownCorner, rightTopCorner};
 }
 
@@ -454,6 +473,7 @@ RegionID Datastructures::findCommonRegion(const std::vector<RegionID> &regions1,
 
 void Datastructures::sortStopsByCoord()
 {
+    std::random_shuffle(m_sortedStopsByCoord.begin(), m_sortedStopsByCoord.end());
     std::sort(m_sortedStopsByCoord.begin(), m_sortedStopsByCoord.end(), CompareDistance());
     m_isSortedStopsByCoord = true;
 }
