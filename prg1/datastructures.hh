@@ -18,6 +18,7 @@
 #include <unordered_set>
 #include <iterator>
 #include <algorithm>
+#include <string.h>
 
 // Types for IDs
 using StopID = long int;
@@ -237,6 +238,8 @@ private:
     // Estimate of performance: O(n log n)
     // random_shuffle O(n) and sort algorithm O(n log n).
     void sortStopsByCoord();
+
+    void sortStopsByName();
 
     struct RegionStructure
     {

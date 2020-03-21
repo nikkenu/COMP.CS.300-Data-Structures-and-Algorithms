@@ -82,6 +82,8 @@ bool Datastructures::add_stop(StopID id, const Name& name, Coord xy)
         m_container.insert({id, ss});
         m_sortedStopsByName.push_back({name,id});
         m_sortedStopsByCoord.push_back({xy,id});
+        m_isSortedStopsByName = false;
+        m_isSortedStopsByCoord = false;
         return true;
     }
 }
@@ -112,9 +114,7 @@ std::vector<StopID> Datastructures::stops_alphabetically()
         return {};
     } else {
         if(!m_isSortedStopsByName){
-            std::random_shuffle(m_sortedStopsByName.begin(), m_sortedStopsByName.end());
-            std::sort(m_sortedStopsByName.begin(), m_sortedStopsByName.end());
-            m_isSortedStopsByName = true;
+            sortStopsByName();
         }
         std::vector<StopID> stopsAlphabeticallyInVector = {};
         std::for_each(m_sortedStopsByName.begin(),m_sortedStopsByName.end(), [&stopsAlphabeticallyInVector](const std::pair<Name, StopID>& item){
@@ -172,9 +172,7 @@ std::vector<StopID> Datastructures::find_stops(Name const& name)
         std::vector<StopID> stopsByName = {};
 
         if(!m_isSortedStopsByName){
-            std::random_shuffle(m_sortedStopsByName.begin(), m_sortedStopsByName.end());
-            std::sort(m_sortedStopsByName.begin(), m_sortedStopsByName.end());
-            m_isSortedStopsByName = true;
+            sortStopsByName();
         }
 
         auto it = std::find_if(m_sortedStopsByName.begin(), m_sortedStopsByName.end(), [&name](const std::pair<Name, StopID>& item){
@@ -477,4 +475,12 @@ void Datastructures::sortStopsByCoord()
     std::sort(m_sortedStopsByCoord.begin(), m_sortedStopsByCoord.end(), CompareDistance());
     m_isSortedStopsByCoord = true;
 }
+
+void Datastructures::sortStopsByName()
+{
+    std::random_shuffle(m_sortedStopsByName.begin(), m_sortedStopsByName.end());
+    std::sort(m_sortedStopsByName.begin(), m_sortedStopsByName.end());
+    m_isSortedStopsByName = true;
+}
+
 
