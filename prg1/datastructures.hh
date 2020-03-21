@@ -68,24 +68,28 @@ public:
     ~Datastructures();
 
     // Estimate of performance: O(1)
-    // Short rationale for estimate: Basicly there's only couple if-clauses
+    // Short rationale for estimate: Basicly there's only if-clause
     // and size function in unordered_map is O(1).
     int stop_count();
 
     // Estimate of performance: O(n)
     // Short rationale for estimate: Basicly it goes throught
-    // every element in unordered map and deletes it.
+    // every element in containers and clear them.
+    // This method is not tested in performance tests
+    // so I haven't even tried to optimize it.
     void clear_all();
 
     // Estimate of performance: O(n)
-    // Short rationale for estimate: Iterating map items is O(n)
-    // and putting them to back of the vector is O(1).
+    // Short rationale for estimate: First we check if
+    // the container is empty, so we don't need to extra work.
+    // ".empty()" for map is O(1) and transform algorithm is O(n).
+    // NOT TESTED IN PERFORMANCE TESTS
     std::vector<StopID> all_stops();
 
-    // Estimate of performance: O(n)
-    // Short rationale for estimate: Time complexity for finding map item
-    // is O(1) in best case, but the worst case is O(n). Also, inserting to
-    // unordered map has same time complexity that finding method has.
+    // Estimate of performance: O(1)
+    // Short rationale for estimate: Finding a item in unordered map
+    // is O(1), but it could be O(n), if
+    // every element is in same bucket. Push_back to vector is O(1).
     bool add_stop(StopID id, Name const& name, Coord xy);
 
     // Estimate of performance: θ(1) but sometimes O(n)
@@ -100,81 +104,79 @@ public:
 
     // We recommend you implement the operations below only after implementing the ones above
 
-    // Estimate of performance: O(n)
-    // Short rationale for estimate: for loop is O(n),
-    // and also bool operations worst case is O(n).
+    // Estimate of performance: O(n log n), best O(n).
+    // Short rationale for estimate: Check if container is empty is O(1),
+    // random_shuffle is O(n) and sort algorithm (n log n). Also
+    // for_each algorithm is O(n).
     std::vector<StopID> stops_alphabetically();
 
-    // Estimate of performance: O(n)
-    // Short rationale for estimate: Bool operation and for loop has same time complexity
-    // and they both are O(n), so we can say that function performs in O(n).
+    // Estimate of performance: worst O(n log n), best O(n).
+    // Short rationale for estimate: Check if container is empty is O(1).
+    // If vector is not sorted by coords, it sorts it's and that method is O(n).
+    // For_each algorithm is O(n) and push_back to vector O(1).
     std::vector<StopID> stops_coord_order();
 
-    // Estimate of performance: O(n)
-    // Short rationale for estimate: Bool operation has time complexity of O(n)
-    // and method's has not other slower operations. min_element has time complexity O(n-1)
+    // Estimate of performance: worst O(n log n), best O(1).
+    // Short rationale for estimate: Check if container is empty O(1).
+    // If stops arent sorted by coords in vector, it sorts them O(n log n).
     StopID min_coord();
 
-    // Estimate of performance: O(n)
-    // Short rationale for estimate: Bool operation has time complexity of O(n)
-    // and method's has not other slower operations. max_element has time complexity O(n-1)
+    // Estimate of performance: worst O(n log n), best O(1)
+    // Short rationale for estimate: Check if container is empty O(1).
+    // If stops arent sorted by coords in vector, it sorts them O(n log n).
     StopID max_coord();
 
-    // Estimate of performance: O(n)
-    // Short rationale for estimate: std::for_each function has time complexity of O(n)
-    // and there's no inner loops or anything else so we can say function is O(n)
+    // Estimate of performance: worst O(n log n), best O(n)
+    // Short rationale for estimate: Check if container is empty O(1).
+    // if stops arent sorted by name in vector O(n log n).
+    // While loop is O(n) and push_back is O(1). Also find_if is O(n).
     std::vector<StopID> find_stops(Name const& name);
 
-    // Estimate of performance: θ(1) but sometimes O(n)
+    // Estimate of performance: worst O(n), best θ(1)
     // Short rationale for estimate: std::find function is the slowest
     // and it has time complexity of θ(1), but the worst case scenario is O(n).
-    // Also, there's no inner loops or any slower actions.
     bool change_stop_name(StopID id, Name const& newname);
 
-    // Estimate of performance: θ(1) but sometimes O(n)
+    // Estimate of performance: worst O(n), best θ(1)
     // Short rationale for estimate: std::find function is the slowest
-    // and it has time complexity of θ(1), but the worst case scenario is O(n).
-    // Also, there's no inner loops or any slower actions.
+    // and it has time complexity of θ(1), but the worst case scenario is O(n
     bool change_stop_coord(StopID id, Coord newcoord);
 
     // We recommend you implement the operations below only after implementing the ones above
 
-    // Estimate of performance: O(n)
-    // Short rationale for estimate: std::find function and insertion to map
-    // has same time complexity of O(n). It would be n^2, but actually
-    // we go through the find first and after it we insert it.
+    // Estimate of performance: worst O(n), best θ(1)
+    // Short rationale for estimate: std::find algorithm is θ(1) usually
+    // but sometimes can be O(n). Inserting to unordered map average is O(1),
+    // but can be O(n) at it's worst scenario.
     bool add_region(RegionID id, Name const& name);
 
-    // Estimate of performance: θ(1) but sometimes O(n)
+    // Estimate of performance: worst O(n), best θ(1)
     // Short rationale for estimate: std::find function is the slowest
     // and it has time complexity of θ(1), but the worst case scenario is O(n).
     // Also, there's no inner loops or any slower actions.
     Name get_region_name(RegionID id);
 
     // Estimate of performance: O(n)
-    // Short rationale for estimate: std::transform is the slowest
-    // action in the function and there's no inner loop or anything
-    // that would slow down the process more than O(n). Std::transform
-    // time complexity is O(n).
+    // Short rationale for estimate: Checking if container is empty O(1),
+    // transform algorithm is O(n). And insert to vector is O(1).
     std::vector<RegionID> all_regions();
 
-    // Estimate of performance: θ(1) but sometimes O(n)
+    // Estimate of performance: worst O(n), usually θ(1)
     // Short rationale for estimate: std::find is the slowest action
     // in the function and it's time complexity is usually θ(1), but
-    // at the worst case scenario is O(n). And there's no inner loops etc.
+    // at the worst case scenario is O(n).
     bool add_stop_to_region(StopID id, RegionID parentid);
 
-    // Estimate of performance: θ(1) but sometimes O(n)
+    // Estimate of performance: worst O(n), usually θ(1)
     // Short rationale for estimate: std::find is the slowest action
     // in the function and it's time complexity is usually θ(1), but
-    // at the worst case scenario is O(n). And there's no inner loops etc.
+    // at the worst case scenario is O(n).
     bool add_subregion_to_region(RegionID id, RegionID parentid);
 
-    // Estimate of performance: O(n)
-    // Short rationale for estimate: std::find θ(1), but sometimes O(n).
-    // std::transform is O(n), and vector push_back is O(1). Also, theres
-    // no inner loops or anything slower so we can say that the function
-    // time complexity is O(n).
+    // Estimate of performance: O(n log n)
+    // Short rationale for estimate: Finding element in unordered map
+    // is usually O(1) but can be O(n). If region has parent
+    // it goes to findRegionParents method, which is O(n log n).
     std::vector<RegionID> stop_regions(StopID id);
 
     // Non-compulsory operations
@@ -183,28 +185,57 @@ public:
     // Short rationale for estimate:
     void creation_finished();
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n log n)
+    // Short rationale for estimate: Finding element in unordered map is
+    // usually O(1), but can be O(n). If element exists in container
+    // it calls findRegionChilds method, which is O(n log n).
+    // For_each algorithm is O(n).
     std::pair<Coord, Coord> region_bounding_box(RegionID id);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: Finding element in unordered map is
+    // usually O(1), but can be O(n). For_each algorithm is O(n), also
+    // the boolean sort operation is O(n) and push_backs into vector O(1).
     std::vector<StopID> stops_closest_to(StopID id);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: Probably O(n^2)
+    // Short rationale for estimate: Slowest function, the slowness
+    // comes by looping every item in vectors and erasing specific one.
     bool remove_stop(StopID id);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: Finding elements in unordered maps
+    // is usually O(1), but can be O(n). Both methods findRegionParentsSecond
+    // and findCommonRegion are O(n).
     RegionID stops_common_region(StopID id1, StopID id2);
 
 private:
+
+    // Estimate of performance: O(1)
+    // Nothing special about this, casual math
     double twoPointDistance(Coord coord1, Coord coord2);
+
+    // Estimate of performance: O(n)
+    // Find method is usually O(1), but can be O(n).
+    // Because method uses recursion it's O(n).
     void findRegionParents(RegionID region, std::vector<RegionID> &regions);
+
+    // Estimate of performance: O(n)
+    // Find method is usually O(1), but can be O(n).
+    // Because method uses recursion it's O(n).
     void findRegionParentsSecond(RegionID region, std::vector<RegionID> &regions);
+
+    // Estimate of performance: O(n)
+    // Find method is usually O(1), but can be O(n).
+    // Because method uses recursion it's O(n). And for loop is O(n).
     void findRegionChilds(RegionID region, std::vector<RegionID> &regions);
+
+    // Estimate of performance: O(1)
+    // Vectors intersection find is O(1) and push_back is O(1).
     RegionID findCommonRegion(const std::vector<RegionID> &regions1, const std::vector<RegionID> &regions2);
+
+    // Estimate of performance: O(n log n)
+    // random_shuffle O(n) and sort algorithm O(n log n).
     void sortStopsByCoord();
 
     struct RegionStructure
