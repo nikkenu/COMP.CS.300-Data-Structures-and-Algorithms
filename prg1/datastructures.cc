@@ -146,10 +146,12 @@ StopID Datastructures::min_coord()
     if(m_container.empty()){
         return NO_STOP;
     } else {
-        if(!m_isSortedStopsByCoord){
-            sortStopsByCoord();
-        }
-        return m_sortedStopsByCoord.front().second;
+        auto result = *std::min_element(m_sortedStopsByCoord.cbegin(), m_sortedStopsByCoord.cend(), [](const auto& lhs, const auto& rhs) {
+                auto dist1 = sqrt(pow(lhs.first.x, 2) + pow(lhs.first.y,2));
+                auto dist2 = sqrt(pow(rhs.first.x, 2) + pow(rhs.first.y,2));
+                return dist1 < dist2;
+            });
+        return result.second;
     }
 
 }
@@ -159,10 +161,12 @@ StopID Datastructures::max_coord()
     if(m_container.empty()){
         return NO_STOP;
     } else {
-        if(!m_isSortedStopsByCoord){
-            sortStopsByCoord();
-        }
-        return m_sortedStopsByCoord.back().second;
+        auto result = *std::max_element(m_sortedStopsByCoord.cbegin(), m_sortedStopsByCoord.cend(), [](const auto& lhs, const auto& rhs) {
+                auto dist1 = sqrt(pow(lhs.first.x, 2) + pow(lhs.first.y,2));
+                auto dist2 = sqrt(pow(rhs.first.x, 2) + pow(rhs.first.y,2));
+                return dist1 < dist2;
+            });
+        return result.second;
     }
 }
 
