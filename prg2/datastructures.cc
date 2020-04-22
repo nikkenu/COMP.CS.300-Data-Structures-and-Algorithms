@@ -51,6 +51,10 @@ void Datastructures::clear_all()
     m_sortedStopsByCoord.clear();
     m_isSortedStopsByName = false;
     m_isSortedStopsByCoord = false;
+
+    //PRG2 Below
+    m_vertexContainer.clear();
+    m_routeContainer.clear();
 }
 
 std::vector<StopID> Datastructures::all_stops()
@@ -67,6 +71,15 @@ std::vector<StopID> Datastructures::all_stops()
 
 bool Datastructures::add_stop(StopID id, const Name& name, Coord xy)
 {
+    // START OF PRG2
+    if(m_vertexContainer.find(id) == m_vertexContainer.end()){
+        Vertex vertex;
+        vertex.stopID = id;
+        vertex.coord = xy;
+        m_vertexContainer.insert({id, vertex});
+    }
+    // END OF PRG2
+
     if(m_container.find(id) != m_container.end()){
         return false;
     } else {
@@ -481,45 +494,153 @@ void Datastructures::sortStopsByName()
     m_isSortedStopsByName = true;
 }
 
+bool Datastructures::findJourneyLeastStops(StopID source, StopID destination, std::vector<bool> &discovered, std::vector<Edge> &path)
+{
+    discovered[source] = true;
+
+    if(source == destination){
+        return true;
+    }
+
+    auto it = m_vertexContainer.find(source);
+    if(it != m_vertexContainer.end()){
+        for(auto edge : it->second.edges){
+            if(!discovered[edge.destination]){
+                if(findJourneyLeastStops(edge.destination, destination, discovered, path)){
+                    path.push_back(edge);
+                    return true;
+                }
+            }
+        }
+    }
+
+    //path.pop_back();
+    return false;
+}
+
+int Datastructures::getDistanceInMeters(Coord source, Coord destination)
+{
+    double length = sqrt(pow(source.x - destination.x,2) + pow(source.y - destination.y,2));
+    return floor(length);
+}
+
+
+// ############# PRG2 BELOW #############
 
 std::vector<RouteID> Datastructures::all_routes()
 {
-    // Replace this comment and the line below with your implementation
-    return {NO_ROUTE};
+    if(!m_routeContainer.empty()){
+        std::vector<RouteID> tempVector = {};
+        std::for_each(m_routeContainer.begin(), m_routeContainer.end(), [&tempVector](const std::pair<RouteID, std::deque<StopID>> &item){
+           tempVector.push_back(item.first);
+        });
+        return tempVector;
+    } else {
+        return {};
+    }
 }
 
 bool Datastructures::add_route(RouteID id, std::vector<StopID> stops)
 {   
-    // Replace this comment and the line below with your implementation
+    if(m_routeContainer.find(id) == m_routeContainer.end() && stops.size() > 1){
+        std::deque<StopID> tempContainer = {};
+        std::for_each(stops.begin(), stops.end(), [&tempContainer](const StopID &item){
+            tempContainer.push_back(item);
+        });
+        for(unsigned int i = 0; i < tempContainer.size()-1; ++i){
+            auto it = m_vertexContainer.find(tempContainer.at(i));
+            if(it != m_vertexContainer.end()){
+                Edge edge;
+                edge.route = id;
+                edge.source = tempContainer.at(i);
+                edge.destination = tempContainer.at(i+1);
+                it->second.edges.push_back(edge);
+            } else {
+                return false;
+            }
+        }
+        m_routeContainer.insert({id, tempContainer});
+        return true;
+    }
     return false;
 }
 
 std::vector<std::pair<RouteID, StopID>> Datastructures::routes_from(StopID stopid)
 {
-    // Replace this comment and the line below with your implementation
+    auto it = m_vertexContainer.find(stopid);
+    if(it != m_vertexContainer.end()){
+        if(!it->second.edges.empty()){
+            std::vector<std::pair<RouteID, StopID>> temp = {};
+            std::for_each(it->second.edges.begin(), it->second.edges.end(), [&temp](const Edge &item){
+                if(item.destination != NO_STOP){
+                    temp.push_back(std::make_pair(item.route, item.destination));
+                }
+            });
+            return temp;
+        }
+    }
     return {{NO_ROUTE, NO_STOP}};
 }
 
 std::vector<StopID> Datastructures::route_stops(RouteID id)
 {
-    // Replace this comment and the line below with your implementation
-    return {NO_STOP};
+    auto it = m_routeContainer.find(id);
+    if(it != m_routeContainer.end()){
+        std::vector<StopID> temp = {};
+        std::for_each(it->second.begin(), it->second.end(), [&temp](const StopID &item){
+           temp.push_back(item);
+        });
+        return temp;
+    } else {
+        return {NO_STOP};
+    }
 }
 
 void Datastructures::clear_routes()
 {
-    // Replace this comment and the line below with your implementation
+    m_routeContainer.clear();
+    for(auto it = m_vertexContainer.begin(); it != m_vertexContainer.end(); ++it){
+        it->second.edges.clear();
+    }
 }
 
 std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_any(StopID fromstop, StopID tostop)
 {
-    // Replace this comment and the line below with your implementation
-    return {{NO_STOP, NO_ROUTE, NO_DISTANCE}};
+    return journey_least_stops(fromstop, tostop);
 }
 
 std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_least_stops(StopID fromstop, StopID tostop)
 {
-    // Replace this comment and the line below with your implementation
+    std::vector<bool> discovered(m_numberOfVertices);
+    std::vector<Edge> path;
+    if(findJourneyLeastStops(fromstop, tostop, discovered, path)){
+        std::reverse(path.begin(), path.end());
+
+        auto it = m_vertexContainer.find(path.at(path.size()-1).source);
+        for(auto edge : it->second.edges){
+            if(edge.destination == tostop){
+                path.push_back(edge);
+            }
+        }
+        Distance distance = 0;
+        std::vector<std::tuple<StopID, RouteID, Distance>> temp = {};
+        for(unsigned int i = 0; i < path.size(); ++i){
+            if(i == 0) temp.push_back({path.at(i).source, path.at(i).route, distance});
+            else{
+                auto firstIT = m_vertexContainer.find(path.at(i-1).source);
+                auto secondIT = m_vertexContainer.find(path.at(i-1).destination);
+                distance = getDistanceInMeters(firstIT->second.coord, secondIT->second.coord) + distance;
+
+                if(i == path.size()-1){
+                    temp.push_back({path.at(i).destination, NO_ROUTE, distance});
+                } else {
+                    temp.push_back({path.at(i).source, path.at(i).route, distance});
+                }
+            }
+        }
+        return temp;
+    }
+
     return {{NO_STOP, NO_ROUTE, NO_DISTANCE}};
 }
 
@@ -537,8 +658,7 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_short
 
 bool Datastructures::add_trip(RouteID routeid, std::vector<Time> const& stop_times)
 {
-    // Replace this comment and the line below with your implementation
-    return false;
+ return false;
 }
 
 std::vector<std::pair<Time, Duration>> Datastructures::route_times_from(RouteID routeid, StopID stopid)

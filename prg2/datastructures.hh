@@ -23,6 +23,8 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
+#include <list>
+#include <iterator>
 
 // Types for IDs
 using StopID = long int;
@@ -83,7 +85,22 @@ using Distance = int;
 // Return value for cases where Duration is unknown
 Distance const NO_DISTANCE = NO_VALUE;
 
+// PRG2 IMPLEMENTATION BELOW
+struct Edge
+{
+    StopID source = NO_STOP;
+    StopID destination = NO_STOP;
+    Duration weight = NO_DURATION;
+    RouteID route = NO_ROUTE;
+};
 
+struct Vertex
+{
+    StopID stopID = NO_STOP;
+    Coord coord = NO_COORD;
+    std::vector<RouteID> ruotes;
+    std::vector<Edge> edges;
+};
 
 // This is the class you are supposed to implement
 
@@ -322,6 +339,10 @@ private:
 
     void sortStopsByName();
 
+    bool findJourneyLeastStops(StopID source, StopID destination, std::vector<bool> &discovered, std::vector<Edge> &path);
+
+    int getDistanceInMeters(Coord source, Coord destination);
+
     struct RegionStructure
     {
         Name name = NO_NAME;
@@ -382,6 +403,13 @@ private:
     std::vector<std::pair<Name, StopID>> m_sortedStopsByName;
     bool m_isSortedStopsByCoord = false;
     bool m_isSortedStopsByName = false;
+
+
+    // ########## PRG2 IMPLEMENTATION BELOW #########
+
+    std::unordered_map<RouteID, std::deque<StopID>> m_routeContainer;
+    std::unordered_map<StopID, Vertex> m_vertexContainer;
+    int m_numberOfVertices;
 
 };
 
