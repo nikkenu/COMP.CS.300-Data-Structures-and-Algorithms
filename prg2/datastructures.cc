@@ -514,7 +514,6 @@ bool Datastructures::findJourneyLeastStops(StopID source, StopID destination, st
         }
     }
 
-    //path.pop_back();
     return false;
 }
 
@@ -554,6 +553,9 @@ bool Datastructures::add_route(RouteID id, std::vector<StopID> stops)
                 edge.route = id;
                 edge.source = tempContainer.at(i);
                 edge.destination = tempContainer.at(i+1);
+                auto it_first = m_vertexContainer.at(tempContainer.at(i));
+                auto it_second = m_vertexContainer.at(tempContainer.at(i+1));
+                edge.distance = getDistanceInMeters(it_first.coord, it_second.coord);
                 it->second.edges.push_back(edge);
             } else {
                 return false;
@@ -627,10 +629,7 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_least
         for(unsigned int i = 0; i < path.size(); ++i){
             if(i == 0) temp.push_back({path.at(i).source, path.at(i).route, distance});
             else{
-                auto firstIT = m_vertexContainer.find(path.at(i-1).source);
-                auto secondIT = m_vertexContainer.find(path.at(i-1).destination);
-                distance = getDistanceInMeters(firstIT->second.coord, secondIT->second.coord) + distance;
-
+                distance = path.at(i-1).distance + distance;
                 if(i == path.size()-1){
                     temp.push_back({path.at(i).destination, NO_ROUTE, distance});
                 } else {
@@ -652,13 +651,12 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_with_
 
 std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_shortest_distance(StopID fromstop, StopID tostop)
 {
-    // Replace this comment and the line below with your implementation
     return {{NO_STOP, NO_ROUTE, NO_DISTANCE}};
 }
 
 bool Datastructures::add_trip(RouteID routeid, std::vector<Time> const& stop_times)
 {
- return false;
+    return false;
 }
 
 std::vector<std::pair<Time, Duration>> Datastructures::route_times_from(RouteID routeid, StopID stopid)

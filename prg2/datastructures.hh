@@ -25,6 +25,7 @@
 #include <iostream>
 #include <list>
 #include <iterator>
+#include <climits>
 
 // Types for IDs
 using StopID = long int;
@@ -92,6 +93,7 @@ struct Edge
     StopID destination = NO_STOP;
     Duration weight = NO_DURATION;
     RouteID route = NO_ROUTE;
+    Distance distance = NO_DISTANCE;
 };
 
 struct Vertex
