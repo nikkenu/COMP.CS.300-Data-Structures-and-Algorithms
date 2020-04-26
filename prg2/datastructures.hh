@@ -86,24 +86,6 @@ using Distance = int;
 // Return value for cases where Duration is unknown
 Distance const NO_DISTANCE = NO_VALUE;
 
-// PRG2 IMPLEMENTATION BELOW
-struct Edge
-{
-    StopID source = NO_STOP;
-    StopID destination = NO_STOP;
-    Duration weight = NO_DURATION;
-    RouteID route = NO_ROUTE;
-    Distance distance = NO_DISTANCE;
-};
-
-struct Vertex
-{
-    StopID stopID = NO_STOP;
-    Coord coord = NO_COORD;
-    std::vector<RouteID> ruotes;
-    std::vector<Edge> edges;
-};
-
 // This is the class you are supposed to implement
 
 class Datastructures
@@ -341,9 +323,9 @@ private:
 
     void sortStopsByName();
 
-    bool findJourneyLeastStops(StopID source, StopID destination, std::vector<bool> &discovered, std::vector<Edge> &path);
-
     int getDistanceInMeters(Coord source, Coord destination);
+
+    void createGraph();
 
     struct RegionStructure
     {
@@ -358,6 +340,26 @@ private:
         Coord coordinate;
         std::shared_ptr<RegionID> region;
     };
+
+    struct Node {
+        StopID destination = NO_STOP;
+        Distance distance = NO_DISTANCE;
+        RouteID route = NO_ROUTE;
+        Node* next;
+    };
+
+    struct Edge {
+        StopID source = NO_STOP;
+        StopID destination = NO_STOP;
+        Distance distance = NO_DISTANCE;
+        RouteID route = NO_ROUTE;
+    };
+
+    Node* getAdjacencyListNode(StopID source, StopID destination, Distance distance, RouteID route, Node* head);
+
+    void deleteHead();
+
+    bool findLeastStops(StopID source, StopID destination, std::vector<bool> &discovered, std::vector<Node*> &path);
 
     struct CompareDistance
     {
@@ -398,7 +400,7 @@ private:
             }
         }
     };
-
+    void print(Node* ptr, StopID stop);
     std::unordered_map<RegionID, RegionStructure> m_regionContainer;
     std::unordered_map<StopID, StopStructure> m_container;
     std::vector<std::pair<Coord, StopID>> m_sortedStopsByCoord;
@@ -410,8 +412,12 @@ private:
     // ########## PRG2 IMPLEMENTATION BELOW #########
 
     std::unordered_map<RouteID, std::deque<StopID>> m_routeContainer;
-    std::unordered_map<StopID, Vertex> m_vertexContainer;
-    int m_numberOfVertices;
+    std::vector<Edge> m_edges;
+    Node **m_head;
+    bool m_graphIsValid = false;
+    //std::unordered_map<StopID, Vertex> m_vertexContainer;
+    unsigned int m_numberOfVertices = 0;
+    unsigned int m_numberOfEdges = 0;
 
 };
 
