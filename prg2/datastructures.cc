@@ -398,7 +398,7 @@ bool Datastructures::remove_stop(StopID id)
             else it3++;
         }
 
-
+        m_numberOfVertices--;
         return true;
     }
     return false;
@@ -496,7 +496,6 @@ void Datastructures::createGraph()
 {
     deleteHead();
     m_head = new Node*[m_numberOfVertices]();
-
     for(auto i : m_container){
         m_head[i.first] = nullptr;
     }
@@ -508,24 +507,17 @@ void Datastructures::createGraph()
         RouteID route = m_edges.at(i).route;
 
         Node* newNode = getAdjacencyListNode(source, destination, distance, route, m_head[source]);
-
         m_head[source] = newNode;
     }
 
     m_graphIsValid = true;
 
-    for(auto i : m_container){
-        if(m_head[i.first] != nullptr){
-            print(m_head[i.first], i.first);
-        }
-    }
-    std::cout << std::endl;
-
 }
 
-Datastructures::Node *Datastructures::getAdjacencyListNode(StopID source, StopID destination, Distance distance, RouteID route, Datastructures::Node *head)
+Datastructures::Node* Datastructures::getAdjacencyListNode(StopID source, StopID destination, Distance distance, RouteID route, Datastructures::Node *head)
 {
     Node* newNode = new Node;
+    newNode->source = source;
     newNode->destination = destination;
     newNode->distance = distance;
     newNode->route = route;
@@ -535,63 +527,57 @@ Datastructures::Node *Datastructures::getAdjacencyListNode(StopID source, StopID
 
 void Datastructures::deleteHead()
 {
-    delete m_head;
+    for(auto i : m_container){
+        delete[] m_head[i.first];
+    }
+    delete[] m_head;
 }
 
-bool Datastructures::findLeastStops(StopID source, StopID destination, std::vector<bool> &discovered, std::vector<Datastructures::Node*> &path)
+bool Datastructures::findLeastStops(StopID source, StopID destination,  Node* pred[], int dist[])
 {
-    discovered[source] = true;
+   std::list<StopID> queue;
+   bool visited[m_numberOfVertices];
+   for(auto i : m_container){
+       visited[i.first] = false;
+       dist[i.first] = INT_MAX;
+       pred[i.first] = nullptr;
+   }
 
-    if(source == destination){
-        return true;
-    }
-    //Node* ptr = m_head[source];
+   visited[source] = true;
+   dist[source] = 0;
+   queue.push_back(source);
 
-    for(Node* ptr = m_head[source]; ptr != nullptr; ptr = ptr->next){
-        if(!discovered[ptr->destination]){
-            std::cout << source << " : " << ptr->destination << std::endl;
-            if(findLeastStops(ptr->destination, destination, discovered, path)){
-                path.push_back(ptr);
-                return true;
-            }
-        } else {
-            std::cout << source << " : " << ptr->destination << std::endl;
-        }
-    }
+   while(!queue.empty()){
+       StopID stop = queue.front();
+       queue.pop_front();
+       for(Node* ptr = m_head[stop]; ptr != nullptr; ptr = ptr->next){
+           if(!visited[ptr->destination]){
+               visited[ptr->destination] = true;
+               dist[ptr->destination] = dist[stop] + 1;
+               pred[ptr->destination] = ptr;
+               queue.push_back(ptr->destination);
 
+               if(ptr->destination == destination){
+                   return true;
+               }
+           }
+       }
+   }
+   return false;
 
-//    while(ptr != nullptr){
-//        //Node* ptr = m_head[source];
-//         else {
-//            std::cout << "y" << std::endl;
-//        }
-//        ptr = ptr->next;
-//    }
-
-    path.pop_back();
-    return false;
-}
-
-void Datastructures::print(Datastructures::Node *ptr, StopID stop)
-{
-    while(ptr != nullptr){
-        std::cout << "(" << stop << ", " << ptr->destination << ")";
-        ptr = ptr->next;
-    }
-    std::cout << std::endl;
 }
 
 std::vector<RouteID> Datastructures::all_routes()
 {
     if(!m_routeContainer.empty()){
-            std::vector<RouteID> tempVector = {};
-            std::for_each(m_routeContainer.begin(), m_routeContainer.end(), [&tempVector](const std::pair<RouteID, std::deque<StopID>> &item){
-               tempVector.push_back(item.first);
-            });
-            return tempVector;
-        } else {
-            return {};
-        }
+        std::vector<RouteID> tempVector = {};
+        std::for_each(m_routeContainer.begin(), m_routeContainer.end(), [&tempVector](const std::pair<RouteID, std::deque<StopID>> &item){
+           tempVector.push_back(item.first);
+        });
+        return tempVector;
+    } else {
+        return {};
+    }
 }
 
 bool Datastructures::add_route(RouteID id, std::vector<StopID> stops)
@@ -611,13 +597,13 @@ bool Datastructures::add_route(RouteID id, std::vector<StopID> stops)
                 edge.destination = it2->first;
                 edge.distance = getDistanceInMeters(it->second.coordinate, it2->second.coordinate);
                 m_edges.push_back(edge);
-                m_numberOfEdges++;
-                m_graphIsValid = false;
             } else {
                 return false;
             }
         }
         m_routeContainer.insert({id, tempContainer});
+        m_numberOfEdges++;
+        m_graphIsValid = false;
         return true;
     }
     return false;
@@ -631,7 +617,7 @@ std::vector<std::pair<RouteID, StopID>> Datastructures::routes_from(StopID stopi
 
     if(m_head[stopid] != nullptr){
         std::vector<std::pair<RouteID,StopID>> temp = {};
-        Node* ptr = m_head[stopid];
+        Node *ptr = m_head[stopid];
         while(ptr != nullptr){
             temp.push_back({ptr->route, ptr->destination});
             ptr = ptr->next;
@@ -673,24 +659,33 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_least
         createGraph();
     }
 
-    std::vector<bool> discovered(m_numberOfVertices);
-    std::vector<Node*> path;
-
-    if(findLeastStops(fromstop, tostop, discovered, path)){
+    Node* pred[m_numberOfVertices];
+    //std::list<std::pair<StopID, Node*>> map;
+    int dist[m_numberOfVertices];
+    if(findLeastStops(fromstop, tostop, pred, dist)){
+        std::vector<Node*> path;
+        StopID crawl = tostop;
+        while(pred[crawl] != nullptr){
+            path.push_back(pred[crawl]);
+            crawl = pred[crawl]->source;
+        }
         std::reverse(path.begin(), path.end());
         std::vector<std::tuple<StopID, RouteID, Distance>> temp = {};
         Distance distance = 0;
-//        for(unsigned int i = 0; i < path.size(); i++){
-
-//        }
-        for(auto i : path){
-
+        for(unsigned int i = 0; i < path.size(); i++){
+            if(i == 0) temp.push_back({path.at(i)->source, path.at(i)->route, distance});
+            else {
+                distance = path.at(i-1)->distance + distance;
+                if(i == path.size() - 1){
+                    temp.push_back({path.at(i)->destination, NO_ROUTE, distance});
+                } else {
+                    temp.push_back({path.at(i)->source, path.at(i)->route, distance});
+                }
+            }
         }
-
         return temp;
-    }
 
-    return {{NO_STOP, NO_ROUTE, NO_DISTANCE}};
+    }
 }
 
 std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_with_cycle(StopID fromstop)

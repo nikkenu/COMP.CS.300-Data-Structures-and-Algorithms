@@ -343,6 +343,7 @@ private:
 
     struct Node {
         StopID destination = NO_STOP;
+        StopID source = NO_STOP;
         Distance distance = NO_DISTANCE;
         RouteID route = NO_ROUTE;
         Node* next;
@@ -359,7 +360,7 @@ private:
 
     void deleteHead();
 
-    bool findLeastStops(StopID source, StopID destination, std::vector<bool> &discovered, std::vector<Node*> &path);
+    bool findLeastStops(StopID source, StopID destination,  Node* pred[], int dist[]);
 
     struct CompareDistance
     {
@@ -400,7 +401,6 @@ private:
             }
         }
     };
-    void print(Node* ptr, StopID stop);
     std::unordered_map<RegionID, RegionStructure> m_regionContainer;
     std::unordered_map<StopID, StopStructure> m_container;
     std::vector<std::pair<Coord, StopID>> m_sortedStopsByCoord;
