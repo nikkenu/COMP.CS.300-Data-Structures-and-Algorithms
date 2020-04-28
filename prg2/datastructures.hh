@@ -24,8 +24,6 @@
 #include <stdexcept>
 #include <iostream>
 #include <list>
-#include <iterator>
-#include <climits>
 
 // Types for IDs
 using StopID = long int;
@@ -85,6 +83,18 @@ using Distance = int;
 
 // Return value for cases where Duration is unknown
 Distance const NO_DISTANCE = NO_VALUE;
+
+struct Edge{
+    StopID source = NO_STOP;
+    StopID destination = NO_STOP;
+    Distance distance = NO_DISTANCE;
+    RouteID route = NO_ROUTE;
+};
+
+struct RouteStopInfo{
+    StopID stop = NO_STOP;
+    Time time = NO_TIME;
+};
 
 // This is the class you are supposed to implement
 
@@ -321,11 +331,17 @@ private:
     // random_shuffle O(n) and sort algorithm O(n log n).
     void sortStopsByCoord();
 
+    // Estimate of performance: O(n log n)
+    // random_shuffle O(n) and sort algorithm O(n log n).
     void sortStopsByName();
 
-    int getDistanceInMeters(Coord source, Coord destination);
+    int getTwoPointDistanceInMeters(Coord source, Coord destination);
 
     void createGraph();
+
+    bool journey_least_stops_helper(StopID source, StopID destination, std::unordered_map<StopID, Edge*> &pred);
+
+    bool journey_shortest_distance_helper(StopID source, StopID destination, std::unordered_map<StopID, Edge*> &pred);
 
     struct RegionStructure
     {
@@ -340,27 +356,6 @@ private:
         Coord coordinate;
         std::shared_ptr<RegionID> region;
     };
-
-    struct Node {
-        StopID destination = NO_STOP;
-        StopID source = NO_STOP;
-        Distance distance = NO_DISTANCE;
-        RouteID route = NO_ROUTE;
-        Node* next;
-    };
-
-    struct Edge {
-        StopID source = NO_STOP;
-        StopID destination = NO_STOP;
-        Distance distance = NO_DISTANCE;
-        RouteID route = NO_ROUTE;
-    };
-
-    Node* getAdjacencyListNode(StopID source, StopID destination, Distance distance, RouteID route, Node* head);
-
-    void deleteHead();
-
-    bool findLeastStops(StopID source, StopID destination,  Node* pred[], int dist[]);
 
     struct CompareDistance
     {
@@ -401,6 +396,7 @@ private:
             }
         }
     };
+
     std::unordered_map<RegionID, RegionStructure> m_regionContainer;
     std::unordered_map<StopID, StopStructure> m_container;
     std::vector<std::pair<Coord, StopID>> m_sortedStopsByCoord;
@@ -408,16 +404,11 @@ private:
     bool m_isSortedStopsByCoord = false;
     bool m_isSortedStopsByName = false;
 
-
-    // ########## PRG2 IMPLEMENTATION BELOW #########
-
-    std::unordered_map<RouteID, std::deque<StopID>> m_routeContainer;
+    // PRG2 IMPLEMENTATION BELOW
+    bool m_isAdjListValid = false;
+    std::unordered_map<StopID, std::vector<Edge>> m_adjList;
+    std::unordered_map<RegionID, std::deque<RouteStopInfo>> m_routeContainer;
     std::vector<Edge> m_edges;
-    Node **m_head;
-    bool m_graphIsValid = false;
-    //std::unordered_map<StopID, Vertex> m_vertexContainer;
-    unsigned int m_numberOfVertices = 0;
-    unsigned int m_numberOfEdges = 0;
 
 };
 
