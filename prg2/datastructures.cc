@@ -31,7 +31,7 @@ Datastructures::Datastructures()
 
 Datastructures::~Datastructures()
 {
-    clear_all();
+    // Replace this comment with your implementation
 }
 
 int Datastructures::stop_count()
@@ -52,11 +52,9 @@ void Datastructures::clear_all()
     m_isSortedStopsByName = false;
     m_isSortedStopsByCoord = false;
 
-    // PRG2 IMPLEMENTATION BELOW
+    // PRG2 IMPLEMETATION BELOW
     m_routeContainer.clear();
-    m_edges.clear();
-    m_adjList.clear();
-    m_isAdjListValid = false;
+    m_graph.clear();
 }
 
 std::vector<StopID> Datastructures::all_stops()
@@ -84,7 +82,12 @@ bool Datastructures::add_stop(StopID id, const Name& name, Coord xy)
         m_sortedStopsByCoord.push_back({xy,id});
         m_isSortedStopsByName = false;
         m_isSortedStopsByCoord = false;
-        m_isAdjListValid = false;
+
+        // PRG2 BELOW
+        std::shared_ptr<Node> node = std::make_shared<Node>();
+        node->stopID = id;
+        node->coordinate = xy;
+        m_graph.insert({id, node});
         return true;
     }
 }
@@ -401,8 +404,6 @@ bool Datastructures::remove_stop(StopID id)
             if (it3->second == id) it3 = m_sortedStopsByCoord.erase(it3);
             else it3++;
         }
-
-
         return true;
     }
     return false;
@@ -488,28 +489,10 @@ void Datastructures::sortStopsByName()
     m_isSortedStopsByName = true;
 }
 
-int Datastructures::getTwoPointDistanceInMeters(Coord source, Coord destination)
+int Datastructures::getDistanceBetweenTwoStops(Coord source, Coord destination)
 {
     double length = sqrt(pow(source.x - destination.x,2) + pow(source.y - destination.y,2));
     return floor(length);
-}
-
-void Datastructures::createGraph()
-{
-    // First make sure that the vector is empty.
-    m_adjList.clear();
-
-    // We go through all edges that user has made in "add_route" function and add them to m_adjList.
-    std::for_each(m_edges.begin(), m_edges.end(), [this](const Edge& item){
-        auto it = m_adjList.find(item.source);
-        if(it == m_adjList.end()){
-            m_adjList.insert({item.source, {item}});
-        } else {
-            it->second.push_back(item);
-        }
-    });
-
-    m_isAdjListValid = true;
 }
 
 bool Datastructures::journey_least_stops_helper(StopID source, StopID destination, std::unordered_map<StopID, Edge*> &pred)
@@ -517,12 +500,12 @@ bool Datastructures::journey_least_stops_helper(StopID source, StopID destinatio
     std::list<StopID> queue;
     std::unordered_map<StopID, bool> visited;
     std::unordered_map<StopID, int> dist;
-
-    for(auto i : m_container){
+    for(auto i : m_graph){
         visited.insert({i.first, false});
         dist.insert({i.first, INT_MAX});
         pred.insert({i.first, nullptr});
     }
+
     visited.at(source) = true;
     dist.at(source) = 0;
     queue.push_back(source);
@@ -530,15 +513,15 @@ bool Datastructures::journey_least_stops_helper(StopID source, StopID destinatio
     while(!queue.empty()){
         StopID stop = queue.front();
         queue.pop_front();
-        auto it = m_adjList.find(stop);
-        if(it != m_adjList.end()){
-            for(auto &edge : it->second){
-                if(visited.at(edge.destination) == false){
-                    visited.at(edge.destination) = true;
-                    dist.at(edge.destination) = dist.at(stop) + 1;
-                    pred.at(edge.destination) = &edge;
-                    queue.push_back(edge.destination);
-                    if(edge.destination == destination){
+        auto it = m_graph.find(stop);
+        if(it != m_graph.end()){
+            for(auto &edge : it->second->edges){
+                if(visited[edge->destination->stopID] == false){
+                    visited.at(edge->destination->stopID) = true;
+                    dist.at(edge->destination->stopID) = dist.at(stop) + 1;
+                    pred.at(edge->destination->stopID) = edge.get();
+                    queue.push_back(edge->destination->stopID);
+                    if(edge->destination->stopID == destination){
                         return true;
                     }
                 }
@@ -546,12 +529,6 @@ bool Datastructures::journey_least_stops_helper(StopID source, StopID destinatio
         }
     }
     return false;
-
-}
-
-bool Datastructures::journey_shortest_distance_helper(StopID source, StopID destination, std::unordered_map<StopID, Edge *> &pred)
-{
-    std::list<Edge> queue;
 
 }
 
@@ -564,55 +541,54 @@ std::vector<RouteID> Datastructures::all_routes()
         });
         return tempVector;
     } else {
-        return {NO_ROUTE}; //???
+        return {NO_ROUTE};
     }
 }
 
 bool Datastructures::add_route(RouteID id, std::vector<StopID> stops)
 {   
-    if(m_routeContainer.find(id) == m_routeContainer.end() && stops.size() > 1){
-            std::deque<RouteStopInfo> tempContainer = {};
-            std::for_each(stops.begin(), stops.end(), [&tempContainer](const StopID &item){
-                RouteStopInfo tmp;
-                tmp.stop = item;
-                tempContainer.push_back(tmp);
-            });
-            for(unsigned int i = 0; i < tempContainer.size()-1; ++i){
-                auto stop = m_container.find(tempContainer.at(i).stop);
-                auto nextStop = m_container.find(tempContainer.at(i+1).stop);
-                if(stop != m_container.end() && nextStop != m_container.end()){
-                    Edge edge;
-                    edge.route = id;
-                    edge.source = stop->first;
-                    edge.destination = nextStop->first;
-                    edge.distance = getTwoPointDistanceInMeters(stop->second.coordinate, nextStop->second.coordinate);
-                    m_edges.push_back(edge);
-                } else {
-                    return false;
-                }
+    auto it = m_routeContainer.find(id);
+    if(it == m_routeContainer.end() && stops.size() > 1){
+        std::deque<RouteStopInfo> tempContainer = {};
+        std::for_each(stops.begin(), stops.end(), [&tempContainer](const StopID &item){
+            RouteStopInfo tmp;
+            tmp.stop = item;
+            tempContainer.push_back(tmp);
+        });
+
+        for(unsigned int i = 0; i < tempContainer.size()-1; ++i){
+            auto firstStop = m_graph.find(tempContainer.at(i).stop);
+            auto secondStop = m_graph.find(tempContainer.at(i+1).stop);
+            if(firstStop != m_graph.end() && secondStop != m_graph.end()){
+                std::shared_ptr<Edge> edge = std::make_shared<Edge>();
+                edge->source = firstStop->second;
+                edge->destination = secondStop->second;
+                edge->distance = getDistanceBetweenTwoStops(firstStop->second->coordinate, secondStop->second->coordinate);
+                edge->route = id;
+                firstStop->second->edges.push_back(edge);
+            } else {
+                return false;
             }
-            m_isAdjListValid = false;
-            m_routeContainer.insert({id, tempContainer});
-            return true;
         }
-        return false;
+
+        m_routeContainer.insert({id, tempContainer});
+        return true;
+    }
+
+    return false;
 }
 
 std::vector<std::pair<RouteID, StopID>> Datastructures::routes_from(StopID stopid)
 {
-    if(m_isAdjListValid == false){
-        createGraph();
-    }
-    std::vector<std::pair<RouteID, StopID>> temp = {};
-    auto it = m_adjList.find(stopid);
-    if(it != m_adjList.end()){
-        std::for_each(it->second.begin(), it->second.end(), [&temp](const Edge &item){
-           if(item.destination != NO_STOP){
-               temp.push_back({item.route, item.destination});
-           }
+    auto it = m_graph.find(stopid);
+    if(it != m_graph.end()){
+        std::vector<std::pair<RouteID, StopID>> temp = {};
+        std::for_each(it->second->edges.begin(), it->second->edges.end(), [&temp](const std::shared_ptr<Edge>& edge){
+            temp.push_back({edge->route, edge->destination->stopID});
         });
         return temp;
     }
+
     return {{NO_ROUTE, NO_STOP}};
 }
 
@@ -632,8 +608,10 @@ std::vector<StopID> Datastructures::route_stops(RouteID id)
 
 void Datastructures::clear_routes()
 {
-    m_adjList.clear();
-    m_isAdjListValid = false;
+    m_routeContainer.clear();
+    for(auto i : m_graph){
+        i.second->edges.clear();
+    }
 }
 
 std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_any(StopID fromstop, StopID tostop)
@@ -643,17 +621,14 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_any(S
 
 std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_least_stops(StopID fromstop, StopID tostop)
 {
-    if(!m_isAdjListValid){
-        createGraph();
-    }
     std::unordered_map<StopID, Edge*> pred;
-
     if(journey_least_stops_helper(fromstop, tostop, pred)){
+
         std::vector<Edge*> path;
         StopID crawl = tostop;
         while(pred.at(crawl) != nullptr){
-            path.push_back(pred[crawl]);
-            crawl = pred.at(crawl)->source;
+            path.push_back(pred.at(crawl));
+            crawl = pred.at(crawl)->source->stopID;
         }
 
         std::reverse(path.begin(), path.end());
@@ -661,14 +636,14 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_least
         std::vector<std::tuple<StopID, RouteID, Distance>> temp = {};
         Distance distance = 0;
         for(unsigned int i = 0; i < path.size(); i++){
-            if(i == 0) temp.push_back({path.at(i)->source, path.at(i)->route, distance});
+            if(i == 0) temp.push_back({path.at(i)->source->stopID, path.at(i)->route, distance});
             else{
                 distance = path.at(i-1)->distance + distance;
-                temp.push_back({path.at(i)->source, path.at(i)->route, distance});
+                temp.push_back({path.at(i)->source->stopID, path.at(i)->route, distance});
             }
         }
         distance = path.at(path.size()-1)->distance + distance;
-        temp.push_back({path.at(path.size()-1)->destination, NO_ROUTE, distance});
+        temp.push_back({path.at(path.size()-1)->destination->stopID, NO_ROUTE, distance});
         return temp;
     }
 
@@ -692,11 +667,12 @@ bool Datastructures::add_trip(RouteID routeid, std::vector<Time> const& stop_tim
     auto it = m_routeContainer.find(routeid);
     if(it != m_routeContainer.end()){
         for(unsigned int i = 0; i < it->second.size(); ++i){
-                it->second.at(i).time.push_back(stop_times.at(i));
+                it->second.at(i).times.push_back(stop_times.at(i));
         }
         return true;
     }
     return false;
+
 }
 
 std::vector<std::pair<Time, Duration>> Datastructures::route_times_from(RouteID routeid, StopID stopid)
@@ -707,8 +683,8 @@ std::vector<std::pair<Time, Duration>> Datastructures::route_times_from(RouteID 
         std::deque<Time> stopTwoTimes;
         for(unsigned int i = 0; i < it->second.size()-1; i++){
             if(it->second.at(i).stop == stopid){
-                stopOneTimes = it->second.at(i).time;
-                stopTwoTimes = it->second.at(i+1).time;
+                stopOneTimes = it->second.at(i).times;
+                stopTwoTimes = it->second.at(i+1).times;
             }
         }
         if(!stopOneTimes.empty() && !stopTwoTimes.empty()){

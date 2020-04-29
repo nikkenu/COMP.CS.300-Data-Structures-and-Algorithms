@@ -23,6 +23,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
+#include <array>
 #include <list>
 
 // Types for IDs
@@ -84,18 +85,28 @@ using Distance = int;
 // Return value for cases where Duration is unknown
 Distance const NO_DISTANCE = NO_VALUE;
 
-struct Edge{
-    StopID source = NO_STOP;
-    StopID destination = NO_STOP;
+// PRG2 IMPLEMETATION BELOW ######
+
+struct Node;
+
+struct Edge {
+    std::shared_ptr<Node> source;
+    std::shared_ptr<Node> destination;
     Distance distance = NO_DISTANCE;
     RouteID route = NO_ROUTE;
 };
 
-struct RouteStopInfo{
+struct RouteStopInfo {
     StopID stop = NO_STOP;
-    //Time time = NO_TIME;
-    std::deque<Time> time;
+    std::deque<Time> times;
 };
+
+struct Node {
+    StopID stopID = NO_STOP;
+    Coord coordinate = NO_COORD;
+    std::vector<std::shared_ptr<Edge>> edges;
+};
+
 
 // This is the class you are supposed to implement
 
@@ -332,17 +343,11 @@ private:
     // random_shuffle O(n) and sort algorithm O(n log n).
     void sortStopsByCoord();
 
-    // Estimate of performance: O(n log n)
-    // random_shuffle O(n) and sort algorithm O(n log n).
     void sortStopsByName();
 
-    int getTwoPointDistanceInMeters(Coord source, Coord destination);
-
-    void createGraph();
+    int getDistanceBetweenTwoStops(Coord source, Coord destination);
 
     bool journey_least_stops_helper(StopID source, StopID destination, std::unordered_map<StopID, Edge*> &pred);
-
-    bool journey_shortest_distance_helper(StopID source, StopID destination, std::unordered_map<StopID, Edge*> &pred);
 
     struct RegionStructure
     {
@@ -405,11 +410,9 @@ private:
     bool m_isSortedStopsByCoord = false;
     bool m_isSortedStopsByName = false;
 
-    // PRG2 IMPLEMENTATION BELOW
-    bool m_isAdjListValid = false;
-    std::unordered_map<StopID, std::vector<Edge>> m_adjList;
-    std::unordered_map<RegionID, std::deque<RouteStopInfo>> m_routeContainer;
-    std::vector<Edge> m_edges;
+    // ######### PRG2 IMPLEMENTATION BELOW ###########
+    std::unordered_map<RouteID, std::deque<RouteStopInfo>> m_routeContainer;
+    std::unordered_map<StopID, std::shared_ptr<Node>> m_graph;
 
 };
 
