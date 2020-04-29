@@ -692,9 +692,7 @@ bool Datastructures::add_trip(RouteID routeid, std::vector<Time> const& stop_tim
     auto it = m_routeContainer.find(routeid);
     if(it != m_routeContainer.end()){
         for(unsigned int i = 0; i < it->second.size(); ++i){
-            if(i != it->second.size()-1){
-                it->second.at(i).time = stop_times.at(i);
-            }
+                it->second.at(i).time.push_back(stop_times.at(i));
         }
         return true;
     }
@@ -703,6 +701,25 @@ bool Datastructures::add_trip(RouteID routeid, std::vector<Time> const& stop_tim
 
 std::vector<std::pair<Time, Duration>> Datastructures::route_times_from(RouteID routeid, StopID stopid)
 {
+    auto it = m_routeContainer.find(routeid);
+    if(it != m_routeContainer.end()){
+        std::deque<Time> stopOneTimes;
+        std::deque<Time> stopTwoTimes;
+        for(unsigned int i = 0; i < it->second.size()-1; i++){
+            if(it->second.at(i).stop == stopid){
+                stopOneTimes = it->second.at(i).time;
+                stopTwoTimes = it->second.at(i+1).time;
+            }
+        }
+        if(!stopOneTimes.empty() && !stopTwoTimes.empty()){
+            std::vector<std::pair<Time, Duration>> temp = {};
+            for(unsigned int i = 0; i < stopOneTimes.size(); i++){
+                Duration duration = stopTwoTimes.at(i) - stopOneTimes.at(i);
+                temp.push_back({stopOneTimes.at(i), duration});
+            }
+            return temp;
+        }
+    }
     return {{NO_TIME, NO_DURATION}};
 }
 

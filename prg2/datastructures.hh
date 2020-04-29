@@ -93,7 +93,8 @@ struct Edge{
 
 struct RouteStopInfo{
     StopID stop = NO_STOP;
-    Time time = NO_TIME;
+    //Time time = NO_TIME;
+    std::deque<Time> time;
 };
 
 // This is the class you are supposed to implement
