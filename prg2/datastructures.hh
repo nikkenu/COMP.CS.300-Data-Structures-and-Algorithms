@@ -349,6 +349,11 @@ private:
 
     bool journey_least_stops_helper(StopID source, StopID destination, std::unordered_map<StopID, Edge*> &pred);
 
+    bool journey_with_cycle_helper(std::shared_ptr<Node> current, std::unordered_map<StopID, bool> &visited, std::unordered_map<StopID, bool> &stack,
+                                   std::vector<std::tuple<StopID, RouteID, Distance>> &route, RouteID routeid = NO_ROUTE, Distance dist = 0);
+
+    StopID minDistance(std::unordered_map<StopID, int> dist, std::unordered_map<StopID, bool> sptSet);
+
     struct RegionStructure
     {
         Name name = NO_NAME;
