@@ -98,6 +98,7 @@ struct Edge {
 
 struct RouteStopInfo {
     StopID stop = NO_STOP;
+    std::shared_ptr<Node> node;
     std::deque<Time> times;
 };
 
@@ -260,50 +261,73 @@ public:
 
     // Phase 2 operations
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: Function checks that routeContainer is not empty, which
+    // has time complexity of O(1). The function's slowest operation is for_each algorithm
+    // which has time complexity of O(n).
     std::vector<RouteID> all_routes();
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: There's only one for-loop which has time complexity
+    // of O(n). Other operations are O(1) so that's why can say the function is operation
+    // with time complexity of O(n)
     bool add_route(RouteID id, std::vector<StopID> stops);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n log n)
+    // Short rationale for estimate: Since the function checks first that the key exists
+    // in the container and after it uses for_each algorithm, which is has time complexity
+    // of O(n) and find is O(log n), so we can say this function is O(n log n).
     std::vector<std::pair<RouteID, StopID>> routes_from(StopID stopid);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n log n)
+    // Short rationale for estimate: Since the function checks first that the key exists
+    // in the container and after it uses for_each algorithm, which is has time complexity
+    // of O(n) and find is O(log n), so we can say this function is O(n log n).
     std::vector<StopID> route_stops(RouteID id);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n^2)
+    // Short rationale for estimate: First we clear route container, then we use for-loop
+    // to go throught every stop in the container. After it we clear every edge in node.
+    // clear function has time complexity of O(n) and also for loop has the same time
+    // complexity.
     void clear_routes();
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n^2)
+    // Short rationale for estimate: This uses journey_least_stop function.
     std::vector<std::tuple<StopID, RouteID, Distance>> journey_any(StopID fromstop, StopID tostop);
 
 //    // Non-compulsory operations
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n^2)
+    // Short rationale for estimate: Since it's calling for helper ("journey_least_stops_helper")
+    // function to solve this problem and that has time complexity of O(n^2).
+    // We can come to that conclusion that this has performance of O(n^2), because
+    // the main function is faster than the helper function.
     std::vector<std::tuple<StopID, RouteID, Distance>> journey_least_stops(StopID fromstop, StopID tostop);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n^2)
+    // Short rationale for estimate: This function is calling for helper function
+    // ("journey_with_cycle_helper"), which is recursive, but it has time complexity of O(n^2).
+    // This function has only one for loop, which has time complexity of O(n), but they are not
+    // inner loops. So we can say function has time complexity of O(n^2).
     std::vector<std::tuple<StopID, RouteID, Distance>> journey_with_cycle(StopID fromstop);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n^2)
+    // Short rationale for estimate: This function has while-loop and for-loop inside of it.
+    // Because there is inner loop and both has time complexity of O(n) it becomes O(n^2).
+    // Helper function ("journey_shortest_distance_helper") has time complexity of O(n).
     std::vector<std::tuple<StopID, RouteID, Distance>> journey_shortest_distance(StopID fromstop, StopID tostop);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n log n)
+    // Short rationale for estimate: First we find if route-id exist, which has time complexity
+    // of O(n log), then we use for-loop, which has time complexity of O(n). So overall it becomes
+    // O(n log n).
     bool add_trip(RouteID routeid, const std::vector<Time> &stop_times);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n^2)
+    // Short rationale for estimate: The function checks if route-id exists O(log n).
+    // If it exists it uses for-loop O(n) and then uses .at() for deque (n).
+    // So over all the time complexity is O(n^2)
     std::vector<std::pair<Time, Duration> > route_times_from(RouteID routeid, StopID stopid);
 
     // Estimate of performance:
@@ -352,7 +376,9 @@ private:
     bool journey_with_cycle_helper(std::shared_ptr<Node> current, std::unordered_map<StopID, bool> &visited, std::unordered_map<StopID, bool> &stack,
                                    std::vector<std::tuple<StopID, RouteID, Distance>> &route, RouteID routeid = NO_ROUTE, Distance dist = 0);
 
-    StopID minDistance(std::unordered_map<StopID, int> dist, std::unordered_map<StopID, bool> sptSet);
+    std::vector<std::tuple<StopID, RouteID, Distance>> journey_shortest_distance_helper(std::unordered_map<StopID, Edge*> &pred, StopID destination);
+
+    //bool journey_earliest_arrival(StopID source, StopID destination, std::unordered_map<StopID, Edge*>)
 
     struct RegionStructure
     {
@@ -418,7 +444,6 @@ private:
     // ######### PRG2 IMPLEMENTATION BELOW ###########
     std::unordered_map<RouteID, std::deque<RouteStopInfo>> m_routeContainer;
     std::unordered_map<StopID, std::shared_ptr<Node>> m_graph;
-
 };
 
 #endif // DATASTRUCTURES_HH

@@ -497,9 +497,18 @@ int Datastructures::getDistanceBetweenTwoStops(Coord source, Coord destination)
 
 bool Datastructures::journey_least_stops_helper(StopID source, StopID destination, std::unordered_map<StopID, Edge*> &pred)
 {
+    // At the beginning we have three different unordered_map containers and one list.
+
+    // queue represents stop-id, which is in the queue.
     std::list<StopID> queue;
+
+    // visited container, tells if function has already visited in the specific stop-id
     std::unordered_map<StopID, bool> visited;
+
+    // dist container, saves data how long is the path. Like from stop 1 -> 2 -> 3 distance is 2
     std::unordered_map<StopID, int> dist;
+
+    // Initialize everything
     for(auto i : m_graph){
         visited.insert({i.first, false});
         dist.insert({i.first, INT_MAX});
@@ -510,6 +519,7 @@ bool Datastructures::journey_least_stops_helper(StopID source, StopID destinatio
     dist.at(source) = 0;
     queue.push_back(source);
 
+    // We go throught as long as there's something in the queue.
     while(!queue.empty()){
         StopID stop = queue.front();
         queue.pop_front();
@@ -564,10 +574,45 @@ bool Datastructures::journey_with_cycle_helper(std::shared_ptr<Node> current, st
     return false;
 }
 
+std::vector<std::tuple<StopID, RouteID, Distance> > Datastructures::journey_shortest_distance_helper(std::unordered_map<StopID, Edge *> &pred, StopID destination)
+{
+    std::vector<Edge*> path;
+
+    // Find the path by starting from the destination and then take destination's source etc.
+    while(pred.at(destination)){
+        path.push_back(pred.at(destination));
+        destination = pred.at(destination)->source->stopID;
+    }
+
+    std::reverse(path.begin(), path.end());
+    std::vector<std::tuple<StopID, RouteID, Distance>> temp = {};
+    Distance distance = 0;
+
+    for(unsigned int i = 0; i < path.size(); i++){
+
+        auto it = path.at(i);
+
+        if(i == 0){
+            temp.push_back({it->source->stopID, it->route, distance});
+        } else {
+            distance = path.at(i-1)->distance + distance;
+            temp.push_back({it->source->stopID, it->route, distance});
+        }
+
+    }
+
+    auto lastElement = path.at(path.size()-1);
+    distance = lastElement->distance + distance;
+    temp.push_back({lastElement->destination->stopID, NO_ROUTE, distance});
+    return temp;
+}
+
 std::vector<RouteID> Datastructures::all_routes()
 {
     if(!m_routeContainer.empty()){
         std::vector<RouteID> tempVector = {};
+
+        // Goes throught the whole unordered_map and save's the key(route-id) to vector.
         std::for_each(m_routeContainer.begin(), m_routeContainer.end(), [&tempVector](const std::pair<RouteID, std::deque<RouteStopInfo>> &item){
            tempVector.push_back(item.first);
         });
@@ -579,42 +624,51 @@ std::vector<RouteID> Datastructures::all_routes()
 
 bool Datastructures::add_route(RouteID id, std::vector<StopID> stops)
 {   
-    auto it = m_routeContainer.find(id);
-    if(it == m_routeContainer.end() && stops.size() > 1){
+    // In this if-clause we check that route exists and vector has more than one stop.
+    // Also, we check that all stops in the vector exists in our graph container.
+    if(m_routeContainer.find(id) == m_routeContainer.end() && stops.size() > 1 &&
+            std::all_of(stops.begin(), stops.end(), [this](const StopID &stop){
+                        return m_graph.find(stop) != m_graph.end();}))
+    {
         std::deque<RouteStopInfo> tempContainer = {};
-        std::for_each(stops.begin(), stops.end(), [&tempContainer](const StopID &item){
-            RouteStopInfo tmp;
-            tmp.stop = item;
-            tempContainer.push_back(tmp);
-        });
+        for(unsigned int i = 0; i < stops.size()-1; ++i){
+        auto firstStop = m_graph.find(stops.at(i));
+        auto secondStop = m_graph.find(stops.at(i+1));
+            std::shared_ptr<Edge> edge = std::make_shared<Edge>();
+            edge->source = firstStop->second;
+            edge->destination = secondStop->second;
+            edge->distance = getDistanceBetweenTwoStops(firstStop->second->coordinate, secondStop->second->coordinate);
+            edge->route = id;
+            firstStop->second->edges.push_back(edge);
 
-        for(unsigned int i = 0; i < tempContainer.size()-1; ++i){
-            auto firstStop = m_graph.find(tempContainer.at(i).stop);
-            auto secondStop = m_graph.find(tempContainer.at(i+1).stop);
-            if(firstStop != m_graph.end() && secondStop != m_graph.end()){
-                std::shared_ptr<Edge> edge = std::make_shared<Edge>();
-                edge->source = firstStop->second;
-                edge->destination = secondStop->second;
-                edge->distance = getDistanceBetweenTwoStops(firstStop->second->coordinate, secondStop->second->coordinate);
-                edge->route = id;
-                firstStop->second->edges.push_back(edge);
-            } else {
-                return false;
+            RouteStopInfo rsi;
+            rsi.stop = firstStop->first;
+            rsi.node = firstStop->second;
+            tempContainer.push_back(rsi);
+
+            if(i == stops.size()-2){
+                RouteStopInfo rsi;
+                rsi.stop = secondStop->first;
+                rsi.node = secondStop->second;
+                tempContainer.push_back(rsi);
             }
         }
-
         m_routeContainer.insert({id, tempContainer});
         return true;
     }
-
     return false;
 }
 
 std::vector<std::pair<RouteID, StopID>> Datastructures::routes_from(StopID stopid)
 {
+    // Get iterator from container by stop-id
     auto it = m_graph.find(stopid);
+
+    // Check if iterator exists
     if(it != m_graph.end()){
         std::vector<std::pair<RouteID, StopID>> temp = {};
+
+        // Loop stop's all edges and find their route-id and destination.
         std::for_each(it->second->edges.begin(), it->second->edges.end(), [&temp](const std::shared_ptr<Edge>& edge){
             temp.push_back({edge->route, edge->destination->stopID});
         });
@@ -626,9 +680,14 @@ std::vector<std::pair<RouteID, StopID>> Datastructures::routes_from(StopID stopi
 
 std::vector<StopID> Datastructures::route_stops(RouteID id)
 {
+    // Get iterator from container by route-id
     auto it = m_routeContainer.find(id);
+
+    // Check if iterator exists
     if(it != m_routeContainer.end()){
         std::vector<StopID> temp = {};
+
+        // Loop all stops in the deque and add them to temporary vector.
         std::for_each(it->second.begin(), it->second.end(), [&temp](const RouteStopInfo &item){
            temp.push_back(item.stop);
         });
@@ -653,16 +712,22 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_any(S
 
 std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_least_stops(StopID fromstop, StopID tostop)
 {
+    // pred saves all the edges for later usage to find the path.
     std::unordered_map<StopID, Edge*> pred;
+
+    // Call for helper function to find the path to pred and return us true if path exists.
     if(journey_least_stops_helper(fromstop, tostop, pred)){
 
         std::vector<Edge*> path;
+
+        // This finds the path by starting from the wanted destination.
         StopID crawl = tostop;
         while(pred.at(crawl) != nullptr){
             path.push_back(pred.at(crawl));
             crawl = pred.at(crawl)->source->stopID;
         }
 
+        // reverse the path, since it's constructed in a wrong way.
         std::reverse(path.begin(), path.end());
 
         std::vector<std::tuple<StopID, RouteID, Distance>> temp = {};
@@ -686,7 +751,10 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_with_
 {
     auto it = m_graph.find(fromstop);
     if(it != m_graph.end()){
+
+        // visited container is for check if algorithm has already checked specific stop-id.
         std::unordered_map<StopID, bool> visited;
+
         std::unordered_map<StopID, bool> stack;
 
         for(const auto & i : m_graph){
@@ -700,27 +768,7 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_with_
         }
 
     }
-    return {{NO_STOP, NO_ROUTE, NO_DISTANCE}};
-}
-
-StopID Datastructures::minDistance(std::unordered_map<StopID, int> dist, std::unordered_map<StopID, bool> sptSet)
-{
-    // Initialize min value
-    int min = INT_MAX;
-    StopID min_index;
-
-    for(unsigned int i = 0; i < m_graph.size(); i++){
-        StopID stop = m_graph.at(i)->stopID;
-        if(sptSet.at(stop) == false && dist.at(stop) <= min){
-            min = dist.at(stop), min_index = stop;
-        }
-    }
-    return min_index;
-//    for (unsigned int v = 0; v < m_graph.size(); v++)
-//        if (sptSet[v] == false && dist[v] <= min){
-//            min = dist[v], min_index = v;
-//        }
-//    return min_index;
+    return {};
 }
 
 std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_shortest_distance(StopID fromstop, StopID tostop)
@@ -728,14 +776,22 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_short
     auto source = m_graph.find(fromstop);
     auto destination = m_graph.find(tostop);
 
+    // First we check if stops even exists, if not we can say path doesn't exist.
     if(source != m_graph.end() && destination != m_graph.end()){
-        std::list<std::shared_ptr<Node>> queue;
-        std::unordered_map<StopID, int> dist;
-        std::unordered_map<StopID, Edge*> paths;
 
+        // Queue represents list what is next up.
+        std::list<std::shared_ptr<Node>> queue;
+
+        // dist keep data how long is the distance by far.
+        std::unordered_map<StopID, int> dist;
+
+        // pred saves data for later usage.
+        std::unordered_map<StopID, Edge*> pred;
+
+        // Here we initalize containers.
         for(const auto & i : m_graph){
             dist.insert({i.first, INT_MAX});
-            paths.insert({i.first, nullptr});
+            pred.insert({i.first, nullptr});
         }
 
         queue.push_back(source->second);
@@ -751,39 +807,14 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_short
                 if(dist.at(dest) > dist.at(src) + edge->distance){
                     dist.at(dest) = dist.at(src) + edge->distance;
                     queue.push_back(edge->destination);
-                    paths.at(src) = edge.get();
+                    pred.at(edge->destination->stopID) = edge.get();
                 }
             }
 
         }
 
-        std::vector<std::tuple<StopID, RouteID, Distance>> temp = {};
-        StopID curr = fromstop;
-        Distance distance = 0;
-        while(curr != tostop){
-            auto it = paths.at(curr);
-            if(it != nullptr){
-                Distance old = distance;
-                distance += it->distance;
-                if(temp.empty()){
-                    temp.push_back({it->source->stopID, it->route, 0});
-                } else {
-                    temp.push_back({it->source->stopID, it->route, old});
-                }
-                curr = it->destination->stopID;
-            } else {
-                break;
-            }
-        }
-        temp.push_back({tostop, NO_ROUTE, distance});
-
-//        for(auto i : paths){
-//            if(i.second != nullptr){
-//                std::cout << i.second->source->stopID << " : " << i.second->destination->stopID << "  -> " << i.second->distance <<std::endl;
-//            }
-//        }
-
-        return temp;
+        // Now we know the minimum spanning tree, so we need to solve the path.
+        return journey_shortest_distance_helper(pred, tostop);
     }
     return {{NO_STOP, NO_ROUTE, NO_DISTANCE}};
 }
@@ -827,7 +858,6 @@ std::vector<std::pair<Time, Duration>> Datastructures::route_times_from(RouteID 
 
 std::vector<std::tuple<StopID, RouteID, Time> > Datastructures::journey_earliest_arrival(StopID fromstop, StopID tostop, Time starttime)
 {
-    // Replace this comment and the line below with your implementation
     return {{NO_STOP, NO_ROUTE, NO_TIME}};
 }
 
