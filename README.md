@@ -1,9 +1,3 @@
-# Olet onnistuneesti hakenut päivitykset upstream repositorysta
-
-# You have successfully pulled updates from the upstream repository
-
-# NOTE! About available test files in prg1
-
 Short explanation of test files:
 - Files named "...-in.txt" are input files containing commands for different tests.
 - Files named "...-out.txt" are output files containing expected output of the corresponding input.
